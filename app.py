@@ -11,8 +11,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 #          Init
 #==========================
 
-#Flask sqlalchemy chatgpt
-
 app = Flask(__name__)
 
 app.secret_key = 'ILoveHotGayFurryFemboys'
@@ -47,8 +45,8 @@ def init_db():
             word TEXT NOT NULL,
             translation TEXT NOT NULL,
             definition TEXT,
+            origin TEXT NOT NULL, 
             date DATE DEFAULT (CURRENT_DATE),
-            guessCount INTEGER DEFAULT 0,
             pass INTEGER DEFAULT 0,
             passWithHelp INTEGER DEFAULT 0,
             fail INTEGER DEFAULT 0,
@@ -172,8 +170,8 @@ def add_word():
     word = request.form.get('word')
     translation = request.form.get('translation')
     definition = request.form.get('definition')  # can be None
+    origin = "user"
     date = request.form.get('date', 0)  # Default to current date
-    guessCount = request.form.get('guessCount', 0)  # Default to 0
     passCount = request.form.get('pass', 0)  # Default to 0
     passWithHelp = request.form.get('passWithHelp', 0)  # Default to 0
     failCount = request.form.get('fail', 0)  # Default to 0
@@ -183,8 +181,8 @@ def add_word():
     debMes(f"Received word: {word}")
     debMes(f"Received translation: {translation}")
     debMes(f"Received definition: {definition}")
+    debMes(f"Received origin: {origin}")
     debMes(f"Received date: {date}")
-    debMes(f"Received guessCount: {guessCount}")
     debMes(f"Received passCount: {passCount}")
     debMes(f"Received passWithHelp: {passWithHelp}")
     debMes(f"Received failCount: {failCount}")
@@ -195,9 +193,9 @@ def add_word():
         cursor = conn.cursor()
 
         cursor.execute('''
-            INSERT INTO words (userID, word, translation, definition, date, guessCount, pass, passWithHelp, fail, failWithHelp)
+            INSERT INTO words (userID, word, translation, definition, origin, date, pass, passWithHelp, fail, failWithHelp)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (user_id, word, translation, definition, date, guessCount, passCount, passWithHelp, failCount, failWithHelp))
+        ''', (user_id, word, translation, definition, origin, date, passCount, passWithHelp, failCount, failWithHelp))
 
         conn.commit()
         conn.close()
