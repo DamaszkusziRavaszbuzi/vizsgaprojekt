@@ -1,0 +1,130 @@
+.sidenav {
+  display: block;
+  height: 100%;
+  width: 13%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  padding-top: 60px;
+}
+
+.sidenav a {
+  padding: 8px 8px 8px 32px;
+  text-decoration: none;
+  font-size: 25px;
+  display: block;
+}
+
+.highlightOnHoverButton {
+  transition: 0.3s;
+}
+
+a {
+  text-decoration: none;
+}
+
+/* a gecis kurva életbe má a faszé nem működik ez a szar */
+.buttonList {
+  margin-left: auto;
+  margin-right: auto;
+  align-self: center;
+  text-align: center;
+  align-content: center;
+  align-items: center;
+  width: 400px;
+  display: flex;
+  gap: 5px;
+}
+
+.buttonList button {
+  flex: 1;
+  width: 100%;
+  height: 50px;
+  border-width: 2px;
+  border-radius: 2px;
+  border-style: solid;
+}
+.buttonList a {
+  flex: 1;
+  display: block;
+}
+
+.inputFielddiv {
+  margin-left: auto;
+  margin-right: auto;
+  align-self: center;
+  text-align: center;
+  align-content: center;
+  align-items: center;
+}
+
+.inputField {
+  margin-left: auto;
+  margin-right: auto;
+  align-self: center;
+  text-align: center;
+  align-content: center;
+  align-items: center;
+  border-width: 2px;
+  border-radius: 2px;
+  border-style: solid;
+  width: 400px;
+  height: 40px;
+  font-size: 30px;
+}
+
+.wordDisplay {
+  margin-left: auto;
+  margin-right: auto;
+  width: 400px;
+  height: 400px;
+  text-align: center;
+  border-width: 3px;
+  border-radius: 2px;
+  border-style: solid;
+  align-content: center;
+  align-items: center;
+}
+
+/* .kinetic-button {
+  background-color: #3498db; 
+  color: white;
+  padding: 12px 24px;
+  font-size: 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+
+  box-shadow: 0 6px #2c80b4; 
+  transition: all 0.15s ease-in-out; 
+  transform: translateY(0);
+  position: relative;
+}
+
+.kinetic-button:hover {
+  box-shadow: 0 10px #2c80b4; 
+  transform: translateY(-4px); 
+}
+
+.kinetic-button:active {
+  box-shadow: 0 2px #2c80b4; 
+  transform: translateY(2px); 
+
+*/
+
+.highlightOnHoverButton {
+  transition: all 0.1s ease-in-out;
+  transform: translateY(0);
+  position: relative;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.highlightOnHoverButton:hover {
+  transform: translateY(-4px);
+}
+
+.highlightOnHoverButton:active {
+  transform: translateY(2px);
+}

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Settings Page</title>
+    <link rel="stylesheet" href="../styles/global.css" />
+    <link rel="stylesheet" href="../styles/themes/themeDark.css" />
+    <link rel="stylesheet" href="../styles/components/mainMenu.css" />
+  </head>
+  <body>
+    <h1>Settings</h1>
+
+    <form action="/save-settings" method="post">
+      <!-- Dropdown Menu -->
+      <label for="theme">Select Theme:</label>
+      <select id="theme" name="theme">
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+        <option value="system">System Default</option>
+      </select>
+      <br /><br />
+
+      <!-- Checkboxes -->
+      <fieldset>
+        <legend>Notification Settings:</legend>
+        <input type="checkbox" id="email" name="notifications" value="email" />
+        <label for="email">Email</label><br />
+
+        <input type="checkbox" id="sms" name="notifications" value="sms" />
+        <label for="sms">SMS</label><br />
+
+        <input type="checkbox" id="push" name="notifications" value="push" />
+        <label for="push">Push Notifications</label>
+      </fieldset>
+      <br />
+
+      <!-- Radio Buttons -->
+      <fieldset>
+        <legend>Language Preference:</legend>
+        <input type="radio" id="english" name="language" value="en" checked />
+        <label for="english">English</label><br />
+
+        <input type="radio" id="spanish" name="language" value="es" />
+        <label for="spanish">Spanish</label><br />
+
+        <input type="radio" id="french" name="language" value="fr" />
+        <label for="french">French</label>
+      </fieldset>
+      <br />
+
+      <!-- Submit Button -->
+      <input type="submit" value="Save Settings" />
+    </form>
+  </body>
+</html>

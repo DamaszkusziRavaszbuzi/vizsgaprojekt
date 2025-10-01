@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>New word</title>
+    <link rel="stylesheet" href="../static/styles/components/new.css" />
+    <link rel="stylesheet" href="../static/styles/global.css" />
+    <link rel="stylesheet" href="../static/styles/themes/themeDark.css" />
+  </head>
+  <body>
+    <main>
+      <div>
+        <center><h1>Új szó</h1></center>
+        <div class="inputFielddiv">
+          <input
+            id="word"
+            class="inputField"
+            type="text"
+            placeholder="Új szó" />
+        </div>
+        <center><h1>Forditása</h1></center>
+        <div class="inputFielddiv">
+          <input
+            id="translation"
+            class="inputField"
+            type="text"
+            placeholder="Forditás" />
+        </div>
+        <center><h1>(Definció)</h1></center>
+        <div class="inputFielddiv">
+          <input
+            id="definition"
+            style="height: 200px; font-size: 20px"
+            class="inputField"
+            type="text"
+            placeholder="Definció, ezt dobja fel ha segtséget kér a felhasználó" />
+        </div>
+      </div>
+      <br />
+      <div class="buttonList">
+        <a href="{{url_for('routeToNew')}}">
+          <button class="highlightOnHoverButton">Mégsem</button>
+        </a>
+        <button id="addButton" class="highlightOnHoverButton">Hozzáadás</button>
+      </div>
+    </main>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="../static/js/new.js"></script>
+  </body>
+</html>

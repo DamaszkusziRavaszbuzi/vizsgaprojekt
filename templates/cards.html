@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Draggable & Flippable Cards</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f4f4f4;
+      }
+
+      .card {
+        width: 200px;
+        height: 200px;
+        background-color: #3498db;
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        position: absolute;
+        user-select: none;
+        perspective: 1000px; /* Needed for 3D effects */
+      }
+
+      .card-inner {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        transform-style: preserve-3d;
+        transition: transform 0.6s;
+      }
+
+      .card-front,
+      .card-back {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        backface-visibility: hidden; /* Hide back when flipped */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 10px;
+      }
+
+      .card-front {
+        background-color: #3498db;
+      }
+
+      .card-back {
+        background-color: #2ecc71;
+        transform: rotateY(180deg); /* Initially, back is rotated */
+        color: white;
+      }
+
+      .flipped .card-inner {
+        transform: rotateY(180deg);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card" id="card1" style="top: 100px; left: 100px">
+      <div class="card-inner">
+        <div class="card-front">Card 1</div>
+        <div class="card-back">Back of Card 1</div>
+      </div>
+    </div>
+
+    <div class="card" id="card2" style="top: 200px; left: 400px">
+      <div class="card-inner">
+        <div class="card-front">Card 2</div>
+        <div class="card-back">Back of Card 2</div>
+      </div>
+    </div>
+
+    <script>
+      let draggedElement = null;
+
+      // Function to handle the drag start
+      function dragStart(e) {
+        draggedElement = e.target;
+        draggedElement.style.transition = "none"; // Disable transition while dragging
+      }
+
+      // Function to handle the drag move
+      function dragMove(e) {
+        if (draggedElement) {
+          draggedElement.style.left = `${
+            e.pageX - draggedElement.offsetWidth / 2
+          }px`;
+          draggedElement.style.top = `${
+            e.pageY - draggedElement.offsetHeight / 2
+          }px`;
+        }
+      }
+
+      // Function to handle the drag end
+      function dragEnd() {
+        if (draggedElement) {
+          draggedElement.style.transition = "all 0.3s ease"; // Re-enable transition after dragging
+          draggedElement = null;
+        }
+      }
+
+      // Function to handle card flip
+      function flipCard(e) {
+        const card = e.currentTarget;
+        card.classList.toggle("flipped");
+      }
+
+      // Attach event listeners to all cards for dragging
+      document.querySelectorAll(".card").forEach((card) => {
+        card.addEventListener("mousedown", dragStart);
+        card.addEventListener("click", flipCard); // Add flip functionality on click
+      });
+
+      // Listen for mousemove and mouseup events globally
+      document.addEventListener("mousemove", dragMove);
+      document.addEventListener("mouseup", dragEnd);
+    </script>
+  </body>
+</html>

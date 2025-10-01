@@ -1,0 +1,60 @@
+:root {
+  --Pbackground: rgb(46, 46, 46);
+  --Sbackground: black;
+  --outline: orange;
+  --text: rgb(187, 121, 0);
+  --HighlightBackground: rgb(121, 78, 0);
+  --HighlightText: rgb(255, 170, 0);
+}
+
+.highlightOnHoverButton {
+  background-color: var(--Sbackground);
+  box-shadow: 0 6px var(--text); /* 3D bottom edge */
+  color: var(--text);
+}
+
+.highlightOnHoverButton:hover {
+  color: var(--HighlightText);
+  box-shadow: 0 10px var(--HighlightText);
+}
+
+.highlightOnHoverButton:active {
+  box-shadow: 0 2px var(--text);
+}
+
+.sidenav {
+  background-color: var(--Sbackground);
+}
+
+.sidenav a {
+  color: var(--text);
+}
+
+.sidenav a:hover {
+  color: var(--HighlightText);
+}
+
+body {
+  background-color: var(--Pbackground);
+}
+.inputField {
+  background: var(--Sbackground);
+  border-color: var(--outline);
+  color: var(--text);
+}
+
+.buttonList button {
+  background-color: var(--Sbackground);
+  border-color: var(--outline);
+  color: var(--text);
+}
+
+.wordDisplay {
+  border-color: var(--outline);
+  color: var(--text);
+  background-color: var(--Sbackground);
+}
+
+h1 {
+  color: var(--text);
+}
