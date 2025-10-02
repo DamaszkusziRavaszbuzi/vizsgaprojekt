@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Üdv!</title>
+    <link rel="stylesheet" href="../static/styles/global.css" />
+    <link rel="stylesheet" href="../static/styles/themes/themeDark.css" />
+    <link rel="stylesheet" href="../static/styles/components/landing.css" />
+  </head>
+  <body>
+    <div class="container">
+      <!-- Placeholder Text -->
+      <div class="placeholder-text">
+        <p>Felhasználóink eddig {PLACEHOLDER} darab szókártyát hoztak létre.</p>
+        <p>
+          Ez {PLACEHOLDER} m2, azaz {PLACEHOLDER}gramm papirt jelent, aminek az
+          előállitásához
+        </p>
+        <p>{PLACEHOLDER} fa</p>
+        <p>{PLACEHOLDER}kWh energia</p>
+        és
+        <p>{PLACEHOLDER}hl viz</p>
+        <p>kellett volna.</p>
+      </div>
+
+      <div style="display: flex; width: 100%; justify-content: space-between">
+        <div class="form-container">
+          <div class="title">Bejelentkezés</div>
+          <form action="/login" method="POST">
+            <input
+              type="text"
+              name="username"
+              placeholder="Add meg a felhasználóneved"
+              class="inputField"
+              required />
+            <input
+              type="password"
+              name="password"
+              placeholder="Add meg a jelszavad"
+              class="inputField"
+              required />
+            <button type="submit" class="highlightOnHoverButton">
+              Bejelentkezés
+            </button>
+          </form>
+        </div>
+
+        <div class="form-container">
+          <div class="title">Regisztráció</div>
+          <form action="/register" method="POST">
+            <input
+              type="text"
+              name="username"
+              placeholder="Válassz felhasználónevet"
+              class="inputField"
+              required />
+            <input
+              type="password"
+              name="password"
+              placeholder="Adj meg egy jelszót"
+              class="inputField"
+              required />
+            <button type="submit" class="highlightOnHoverButton">
+              Regisztráció
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
