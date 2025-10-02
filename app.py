@@ -6,6 +6,7 @@
 from flask import Flask, request, jsonify, render_template, session, redirect
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash 
+import random
 
 #==========================
 #          Init
@@ -78,7 +79,7 @@ def pong():
 
 @app.route('/login')
 def routeToLogin():
-    return render_template('login.html')
+    return render_template('landing.html')
 
 
 @app.route('/')
@@ -202,6 +203,82 @@ def add_word():
         return jsonify({"status": "success", "message": "Word added successfully!"}), 200
     else:
         return jsonify({"status": "error", "message": "Missing input fields!"}), 400
+
+@app.route('/get_random_word', methods=['GET'])
+def get_random_word():
+    """Fetch a random word from the user's dictionary."""
+    if 'userID' not in session:
+        return jsonify({"status": "error", "message": "User not logged in!"}), 400
+
+    user_id = session['userID']
+    # Check if the user has any words in their dictionary
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM words WHERE userID = ?', (user_id,))
+    words = cursor.fetchall()
+
+    if not words:
+        return jsonify({"status": "error", "message": "No words found for the user!"}), 400
+
+    # Choose a random word
+    random_word = random.choice(words)
+    word = random_word[2]  # Word
+    translation = random_word[3]  # Translation
+    word_id = random_word[0] #ID
+    debMes(word_id)
+    debMes(random_word[0])
+
+    # Return the word and translation
+    return jsonify({"word": word, "translation": translation}), 200
+
+@app.route('/update_score', methods=['POST'])
+def update_score():
+    """Update the user's score for the word."""
+    if 'userID' not in session:
+        return jsonify({"status": "error", "message": "User not logged in!"}), 400
+
+    user_id = session['userID']
+    word_id = request.json.get('word_id')
+    status = request.json.get('status')  # Can be 'pass', 'fail', 'failWithHelp', etc.
+
+    if not word_id:
+        return jsonify({"status": "error", "message": "Missing word_id!"}), 400
+    if not status:
+        return jsonify({"status": "error", "message": "Missing status!"}), 400
+
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+
+    # Update the word's score based on the status
+    if status == 'fail':
+        cursor.execute('UPDATE words SET fail = fail + 1 WHERE id = ? AND userID = ?', (word_id, user_id))
+    elif status == 'pass':
+        cursor.execute('UPDATE words SET pass = pass + 1 WHERE id = ? AND userID = ?', (word_id, user_id))
+    elif status == 'failWithHelp':
+        cursor.execute('UPDATE words SET failWithHelp = failWithHelp + 1 WHERE id = ? AND userID = ?', (word_id, user_id))
+    elif status == 'passWithHelp':
+        cursor.execute('UPDATE words SET passWithHelp = passWithHelp + 1 WHERE id = ? AND userID = ?', (word_id, user_id))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "success", "message": "Score updated successfully!"}), 200
+
+@app.route('/switch_translation', methods=['POST'])
+def switch_translation():
+    """Toggle the translation direction."""
+    if 'userID' not in session:
+        return jsonify({"status": "error", "message": "User not logged in!"}), 400
+
+    # You can track the current direction in the session or database
+    # For simplicity, let's toggle a session variable for this example
+    if 'translation_direction' in session:
+        session['translation_direction'] = not session['translation_direction']
+    else:
+        session['translation_direction'] = True  # Default to word-to-translation
+
+    return jsonify({"status": "success", "message": "Translation direction switched!"}), 200
+
 
 
 #==========================
