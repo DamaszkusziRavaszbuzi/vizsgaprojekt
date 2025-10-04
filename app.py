@@ -106,6 +106,12 @@ def routeToPractice():
         return redirect('/login')  # Redirect to login if not logged in
     return render_template('practice.html')
 
+@app.route('/cards')
+def routeToCards():
+    if 'userID' not in session:  # Check if the user is logged in
+        return redirect('/login')  # Redirect to login if not logged in
+    return render_template('cards2.html')
+
 
 
 #========= APIs ==========
@@ -229,7 +235,24 @@ def get_random_word():
     debMes(random_word[0])
 
     # Return the word and translation
-    return jsonify({"word": word, "translation": translation}), 200
+    return jsonify({"word": word, "translation": translation, "word_id": word_id}), 200
+
+@app.route('/get_word_count', methods=['GET'])
+def get_word_count():
+    if 'userID' not in session:
+        return jsonify({"status": "error", "message": "User not logged in!"}), 400
+
+    user_id = session['userID']
+    # Check if the user has any words in their dictionary
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM words WHERE userID = ?', (user_id,))
+    words = cursor.fetchall()
+    wordCount = len(words)
+
+    if not words:
+        return jsonify({"status": "error", "message": "No words found for the user!"}), 400
+    return jsonify({"count": wordCount})
 
 @app.route('/update_score', methods=['POST'])
 def update_score():
