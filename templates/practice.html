@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>fasz</title>
+    <title>Practice</title>
     <link rel="stylesheet" href="../static/styles/components/practice.css" />
     <link rel="stylesheet" href="../static/styles/global.css" />
     <link rel="stylesheet" href="../static/styles/themes/themeDark.css" />
@@ -18,14 +18,21 @@
         <input class="inputField" type="text" placeholder="PLACEHOLDER" />
       </div>
       <br />
+      <div
+        class="feedback"
+        id="feedback"
+        style="text-align: center; font-size: 1.25em; min-height: 2em"></div>
+      <br />
       <div class="buttonList">
-        <button class="highlightOnHoverButton">Help</button>
+        <button class="highlightOnHoverButton" id="Help">Help</button>
         <a href="index.html"
-          ><button class="highlightOnHoverButton">Home</button></a
+          ><button class="highlightOnHoverButton" id="Home">Home</button></a
         >
-        <button class="highlightOnHoverButton">Give up</button>
-        <button class="highlightOnHoverButton">Check</button>
+        <button class="highlightOnHoverButton" id="GiveUp">Give up</button>
+        <button class="highlightOnHoverButton" id="Check">Check</button>
+        <button class="highlightOnHoverButton" id="Switch">Switch</button>
       </div>
     </main>
+    <script src="../static/js/randomPractice.js"></script>
   </body>
 </html>

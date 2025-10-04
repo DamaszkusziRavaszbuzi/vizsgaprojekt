@@ -3,20 +3,60 @@ let currentTranslation;
 let wordID;
 let translationDirection = true; // true = word -> translation, false = translation -> word
 
-// On page load, fetch a random word
-window.onload = function () {
+const wordDisplay = document.querySelector(".wordDisplay h1");
+const inputField = document.querySelector(".inputField");
+const feedbackDiv = document.getElementById("feedback");
+
+function showFeedback(message, isCorrect) {
+  feedbackDiv.innerText = message;
+  feedbackDiv.style.color = isCorrect ? "limegreen" : "orange";
+}
+
+function clearFeedback() {
+  feedbackDiv.innerText = "";
+}
+
+function setInputState(enabled) {
+  inputField.disabled = !enabled;
+  document.querySelector("#Check").disabled = !enabled;
+  document.querySelector("#GiveUp").disabled = !enabled;
+}
+
+function loadRandomWord() {
+  setInputState(false);
   fetch("/get_random_word")
     .then((response) => response.json())
     .then((data) => {
+      if (data.status === "error") {
+        wordDisplay.innerText = data.message || "No words!";
+        inputField.placeholder = "";
+        setInputState(false);
+        return;
+      }
       currentWord = data.word;
       currentTranslation = data.translation;
       wordID = data.word_id;
-      console.log(wordID); //gecis faszé nem működik ez a szar majd kijavitom
-      document.querySelector(".wordDisplay h1").innerText = currentWord; // Display word
-      document.querySelector(".inputField").placeholder = currentTranslation; // Input should be the translation
+      inputField.value = "";
+      clearFeedback();
+      setInputState(true);
+
+      if (translationDirection) {
+        wordDisplay.innerText = currentWord;
+        inputField.placeholder = currentTranslation;
+      } else {
+        wordDisplay.innerText = currentTranslation;
+        inputField.placeholder = currentWord;
+      }
     })
-    .catch((error) => console.error("Error fetching word:", error));
-};
+    .catch((error) => {
+      wordDisplay.innerText = "Error fetching word!";
+      setInputState(false);
+      console.error("Error fetching word:", error);
+    });
+}
+
+// On page load
+window.onload = loadRandomWord;
 
 // Switch button logic
 document.querySelector("#Switch").addEventListener("click", function () {
@@ -25,13 +65,14 @@ document.querySelector("#Switch").addEventListener("click", function () {
     .then((data) => {
       translationDirection = !translationDirection;
       if (translationDirection) {
-        document.querySelector(".wordDisplay h1").innerText = currentWord;
-        document.querySelector(".inputField").placeholder = currentTranslation;
+        wordDisplay.innerText = currentWord;
+        inputField.placeholder = currentTranslation;
       } else {
-        document.querySelector(".wordDisplay h1").innerText =
-          currentTranslation;
-        document.querySelector(".inputField").placeholder = currentWord;
+        wordDisplay.innerText = currentTranslation;
+        inputField.placeholder = currentWord;
       }
+      inputField.value = "";
+      clearFeedback();
     })
     .catch((error) =>
       console.error("Error switching translation direction:", error)
@@ -40,10 +81,10 @@ document.querySelector("#Switch").addEventListener("click", function () {
 
 // Check button logic
 document.querySelector("#Check").addEventListener("click", function () {
-  const userInput = document.querySelector(".inputField").value;
-  const isCorrect = translationDirection
-    ? userInput === currentTranslation
-    : userInput === currentWord;
+  setInputState(false);
+  const userInput = inputField.value.trim();
+  const correctAnswer = translationDirection ? currentTranslation : currentWord;
+  const isCorrect = userInput === correctAnswer;
 
   // Update the score based on whether the answer is correct
   fetch("/update_score", {
@@ -57,12 +98,32 @@ document.querySelector("#Check").addEventListener("click", function () {
     }),
   })
     .then((response) => response.json())
-    .then((data) => console.log(data))
-    .catch((error) => console.error("Error updating score:", error));
+    .then((data) => {
+      showFeedback(
+        isCorrect
+          ? "Correct!"
+          : `Incorrect! The correct answer was: "${correctAnswer}"`,
+        isCorrect
+      );
+      setTimeout(() => {
+        clearFeedback();
+        loadRandomWord();
+      }, 1700);
+    })
+    .catch((error) => {
+      showFeedback("Error updating score!", false);
+      setTimeout(() => {
+        clearFeedback();
+        loadRandomWord();
+      }, 1700);
+    });
 });
 
 // Give up button logic
 document.querySelector("#GiveUp").addEventListener("click", function () {
+  setInputState(false);
+  const correctAnswer = translationDirection ? currentTranslation : currentWord;
+
   fetch("/update_score", {
     method: "POST",
     headers: {
@@ -74,6 +135,21 @@ document.querySelector("#GiveUp").addEventListener("click", function () {
     }),
   })
     .then((response) => response.json())
-    .then((data) => console.log(data))
-    .catch((error) => console.error("Error updating score:", error));
+    .then((data) => {
+      showFeedback(
+        `Give up! The correct answer was: "${correctAnswer}"`,
+        false
+      );
+      setTimeout(() => {
+        clearFeedback();
+        loadRandomWord();
+      }, 1700);
+    })
+    .catch((error) => {
+      showFeedback("Error updating score!", false);
+      setTimeout(() => {
+        clearFeedback();
+        loadRandomWord();
+      }, 1700);
+    });
 });

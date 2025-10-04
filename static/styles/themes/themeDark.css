@@ -1,6 +1,7 @@
 :root {
-  --Pbackground: rgb(46, 46, 46);
-  --Sbackground: black;
+  --Pbackground: rgb(46, 46, 46); /*Primary background*/
+  --Sbackground: black; /*Secondary background*/
+  --Cbackground: rgb(20, 20, 20); /*Card background*/
   --outline: orange;
   --text: rgb(187, 121, 0);
   --HighlightBackground: rgb(121, 78, 0);
