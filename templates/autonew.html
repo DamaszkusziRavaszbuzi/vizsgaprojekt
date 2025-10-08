@@ -3,32 +3,81 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>fasz</title>
-    <link rel="stylesheet" href="../styles/global.css" />
-    <link rel="stylesheet" href="../styles/themes/themeDark.css" />
+    <title>Ajánlott angol szó</title>
+    <link rel="stylesheet" href="../static/styles/global.css" />
+    <link rel="stylesheet" href="../static/styles/themes/themeDark.css" />
+    <style>
+      .wordDisplay {
+        margin: 30px auto;
+      }
+      .btnRow {
+        display: flex;
+        gap: 40px;
+        justify-content: center;
+      }
+      .highlightOnHoverButton {
+        min-width: 100px;
+      }
+    </style>
   </head>
   <body>
     <main>
-      <div class="wordDisplay" style="height: 150px">
-        <h1>PLACEHOLDER</h1>
+      <div class="wordDisplay" style="height: 120px">
+        <h1 id="word">...</h1>
       </div>
-      <br />
-      <div class="wordDisplay" style="height: 150px">
-        <h1>PLACEHOLDER</h1>
+      <div class="wordDisplay" style="height: 120px">
+        <h1 id="translation">...</h1>
       </div>
-      <br />
-      <div class="wordDisplay" style="height: 250px">
-        <h1>PLACEHOLDER</h1>
-      </div>
-      <br />
-      <br />
-      <div class="buttonList">
-        <button class="highlightOnHoverButton">X</button>
-        <a href="index.html"
-          ><button class="highlightOnHoverButton">⏎</button></a
-        >
-        <button class="highlightOnHoverButton">✓</button>
+      <div class="btnRow">
+        <button class="highlightOnHoverButton" onclick="dismissSuggestion()">
+          Elutasít
+        </button>
+        <button class="highlightOnHoverButton" onclick="acceptSuggestion()">
+          Elfogad
+        </button>
       </div>
     </main>
+    <script>
+      let currentWord = "";
+      let currentTranslation = "";
+
+      function fetchSuggestion() {
+        fetch("/recommend_word")
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.status === "success") {
+              currentWord = data.word;
+              currentTranslation = data.translation;
+              document.getElementById("word").innerText = currentWord;
+              document.getElementById("translation").innerText =
+                currentTranslation;
+            } else {
+              alert(data.message || "Hiba történt!");
+            }
+          });
+      }
+      function dismissSuggestion() {
+        fetchSuggestion();
+      }
+      function acceptSuggestion() {
+        fetch("/accept_word", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            word: currentWord,
+            translation: currentTranslation,
+          }),
+        })
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.status === "success") {
+              fetchSuggestion();
+            } else {
+              alert(data.message || "Hiba történt!");
+            }
+          });
+      }
+      window.onload = fetchSuggestion;
+    </script>
   </body>
 </html>

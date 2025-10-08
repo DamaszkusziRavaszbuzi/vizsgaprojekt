@@ -2,9 +2,8 @@
 $("#addButton").click(function () {
   const word = $("#word").val();
   const translation = $("#translation").val();
-  const definition = $("#definition").val();
 
-  $.post("/add_word", { word, translation, definition })
+  $.post("/add_word", { word, translation })
     .done(function (response) {
       alert(response.message); // Show success message
     })

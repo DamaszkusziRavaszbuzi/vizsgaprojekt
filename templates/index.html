@@ -11,12 +11,11 @@
   <body>
     <main>
       <div class="sidenav">
-        <a href="index.html">Főoldal</a>
         <a href="">Fiók</a>
         <a href="">Szavak kezelése</a>
         <a href="">Beálltások</a>
         <a href="">Statisztika</a>
-        <a href="">Kijelentkezés</a>
+        <a href="{{url_for('logout')}}">Kijelentkezés</a>
       </div>
 
       <div>
@@ -47,14 +46,14 @@
               >
             </td>
             <td>
-              <a href="autonew.html"
+              <a href="{{url_for('routeToNewRandom')}}"
                 ><button class="highlightOnHoverButton">
                   Új random szó
                 </button></a
               >
             </td>
             <td>
-              <a href="autonew.html"
+              <a href="{{url_for('routeToNewRandom')}}"
                 ><button class="highlightOnHoverButton">
                   Új ajánlott szó
                 </button></a
@@ -64,26 +63,5 @@
         </table>
       </div>
     </main>
-    <center>
-      <form action="/register" method="POST">
-        <input type="text" name="username" placeholder="Username" required />
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          required />
-        <button type="submit">Register</button>
-      </form>
-
-      <form action="/login" method="POST">
-        <input type="text" name="username" placeholder="Username" required />
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          required />
-        <button type="submit">Login</button>
-      </form>
-    </center>
   </body>
 </html>

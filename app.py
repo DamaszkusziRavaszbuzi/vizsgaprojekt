@@ -7,6 +7,8 @@ from flask import Flask, request, jsonify, render_template, session, redirect
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash 
 import random
+import requests
+import os
 
 #==========================
 #          Init
@@ -14,7 +16,7 @@ import random
 
 app = Flask(__name__)
 
-app.secret_key = 'ILoveHotGayFurryFemboys'
+app.secret_key = 'furryfemboy'
 
 DATABASE = 'database.db'
 
@@ -45,7 +47,6 @@ def init_db():
             userID INTEGER NOT NULL,
             word TEXT NOT NULL,
             translation TEXT NOT NULL,
-            definition TEXT,
             origin TEXT NOT NULL, 
             date DATE DEFAULT (CURRENT_DATE),
             pass INTEGER DEFAULT 0,
@@ -60,6 +61,30 @@ def init_db():
     conn.close()
 
 
+WORDS_FILE = "/media/user/DAT/ctest/words_alpha.txt"
+
+def get_random_english_word():
+    with open(WORDS_FILE, "r") as f:
+        words = [line.strip() for line in f if line.strip()]
+    return random.choice(words)
+
+def translate_to_hungarian(word):
+    url = "https://libretranslate.de/translate"
+    data = {
+        "q": word,
+        "source": "en",
+        "target": "hu",
+        "format": "text"
+    }
+    try:
+        resp = requests.post(url, data=data, timeout=5)
+        print(f"Status code: {resp.status_code}")
+        print(f"Response text: {resp.text}")
+        resp.raise_for_status()
+        return resp.json()["translatedText"]
+    except Exception as e:
+        debMes(f"Translation error: {e}")
+        return ""
 
 
 #==========================
@@ -99,6 +124,12 @@ def routeToNew():
     if 'userID' not in session:  # Check if the user is logged in
         return redirect('/login')  # Redirect to login if not logged in
     return render_template('new.html')
+
+@app.route('/newRandom')
+def routeToNewRandom():
+    if 'userID' not in session:  # Check if the user is logged in
+        return redirect('/login')  # Redirect to login if not logged in
+    return render_template('autonew.html')
 
 @app.route('/practice')
 def routeToPractice():
@@ -152,15 +183,18 @@ def login():
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
     user = cursor.fetchone()
+    conn.close()
 
     if user and (user[2] == password):  # user[2] is the password
         # Store userID in session
         session['userID'] = user[0]  # user[0] is the user ID
-        return jsonify({"status": "success", "message": "Login successful!"}), 200
+        return redirect('/home')
     else:
-        return jsonify({"status": "error", "message": "Invalid credentials!"}), 400
+        # Render the login page again with an error message
+        error_msg = "Hibás felhasználónév vagy jelszó!"
+        return render_template('landing.html', login_error=error_msg)
 
-@app.route('/logout', methods=['POST'])
+@app.route('/logout', methods=['GET','POST'])
 def logout():
     """Endpoint to logout a user."""
     session.pop('userID', None)  # Remove userID from session
@@ -176,7 +210,6 @@ def add_word():
     debMes(f"Received userID: {user_id}")  # debug logging
     word = request.form.get('word')
     translation = request.form.get('translation')
-    definition = request.form.get('definition')  # can be None
     origin = "user"
     date = request.form.get('date', 0)  # Default to current date
     passCount = request.form.get('pass', 0)  # Default to 0
@@ -187,7 +220,6 @@ def add_word():
     # Debugging: Print out all the form values
     debMes(f"Received word: {word}")
     debMes(f"Received translation: {translation}")
-    debMes(f"Received definition: {definition}")
     debMes(f"Received origin: {origin}")
     debMes(f"Received date: {date}")
     debMes(f"Received passCount: {passCount}")
@@ -200,9 +232,9 @@ def add_word():
         cursor = conn.cursor()
 
         cursor.execute('''
-            INSERT INTO words (userID, word, translation, definition, origin, date, pass, passWithHelp, fail, failWithHelp)
+            INSERT INTO words (userID, word, translation, origin, date, pass, passWithHelp, fail, failWithHelp)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (user_id, word, translation, definition, origin, date, passCount, passWithHelp, failCount, failWithHelp))
+        ''', (user_id, word, translation, origin, date, passCount, passWithHelp, failCount, failWithHelp))
 
         conn.commit()
         conn.close()
@@ -302,7 +334,49 @@ def switch_translation():
 
     return jsonify({"status": "success", "message": "Translation direction switched!"}), 200
 
+@app.route('/accept_word', methods=['POST'])
+def accept_word():
+    if 'userID' not in session:
+        return jsonify({"status": "error", "message": "User not logged in!"}), 400
 
+    user_id = session['userID']
+    word = request.json.get('word')
+    translation = request.json.get('translation')
+    if not word or not translation:
+        return jsonify({"status": "error", "message": "Missing word or translation!"}), 400
+
+    origin = "machine"
+    date = 0  # or use current date
+    passCount = 0
+    passWithHelp = 0
+    failCount = 0
+    failWithHelp = 0
+
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO words (userID, word, translation, origin, date, pass, passWithHelp, fail, failWithHelp)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (user_id, word, translation, origin, date, passCount, passWithHelp, failCount, failWithHelp))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success", "message": "Word accepted and added!"}), 200
+
+@app.route('/recommend_word', methods=['GET'])
+def recommend_word():
+    if 'userID' not in session:
+        return jsonify({"status": "error", "message": "User not logged in!"}), 400
+
+    english_word = get_random_english_word()
+    translation = translate_to_hungarian(english_word)
+    if not translation:
+        return jsonify({"status": "error", "message": "Translation failed!"}), 500
+
+    return jsonify({
+        "status": "success",
+        "word": english_word,
+        "translation": translation
+    })
 
 #==========================
 #           Run
