@@ -1,0 +1,11 @@
+      .wordDisplay {
+        margin: 30px auto;
+      }
+      .btnRow {
+        display: flex;
+        gap: 40px;
+        justify-content: center;
+      }
+      .highlightOnHoverButton {
+        min-width: 100px;
+      }

@@ -5,123 +5,14 @@
     <title>Flippable Draggable Cards - Themed</title>
     <link rel="stylesheet" href="../static/styles/global.css" />
     <link rel="stylesheet" href="../static/styles/themes/themeDark.css" />
-    <style>
-      :root {
-        /* fallback for direct use if needed */
-        --card-radius: 12px;
-      }
-
-      body {
-        min-height: 100vh;
-        margin: 0;
-        overflow: hidden;
-        position: relative;
-        font-family: inherit;
-      }
-
-      #addCardBtn {
-        position: fixed;
-        top: 32px;
-        left: 32px;
-        z-index: 100;
-        padding: 12px 26px;
-        font-size: 1.2em;
-      }
-      /* Use your highlightOnHoverButton style for the button */
-      #addCardBtn {
-        /* Inherit from .highlightOnHoverButton */
-        background-color: var(--Sbackground);
-        box-shadow: 0 6px var(--text);
-        color: var(--text);
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.1s ease-in-out;
-        position: relative;
-      }
-      #addCardBtn:hover {
-        color: var(--HighlightText);
-        box-shadow: 0 10px var(--HighlightText);
-        transform: translateY(-4px);
-      }
-      #addCardBtn:active {
-        box-shadow: 0 2px var(--text);
-        transform: translateY(2px);
-      }
-
-      .card-container {
-        position: absolute;
-        cursor: grab;
-        user-select: none;
-        z-index: 1;
-        border-radius: var(--card-radius);
-      }
-
-      .card-container.active {
-        z-index: 10;
-      }
-      .card {
-        width: 270px;
-        height: 200px;
-        perspective: 1200px;
-        border-radius: var(--card-radius);
-      }
-      .card-inner {
-        width: 100%;
-        height: 100%;
-        position: relative;
-        transition: transform 0.6s;
-        transform-style: preserve-3d;
-        border-radius: var(--card-radius);
-      }
-      .card.flipped .card-inner {
-        transform: rotateY(180deg);
-      }
-      .card-front,
-      .card-back {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        backface-visibility: hidden;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2.1em;
-        border-radius: var(--card-radius);
-        border: 3px solid var(--outline);
-        user-select: none;
-      }
-      .card-front {
-        background: var(--Sbackground);
-        color: var(--text);
-      }
-      .card-back {
-        background: var(--Cbackground);
-        color: var(--HighlightText);
-        transform: rotateY(180deg);
-      }
-      @media (max-width: 650px) {
-        .card {
-          width: 180px;
-          height: 250px;
-        }
-        .card-front,
-        .card-back {
-          font-size: 1.1em;
-        }
-        #addCardBtn {
-          padding: 8px 13px;
-          font-size: 1em;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="../static/styles/components/cards.css" />
   </head>
   <body>
     <button id="addCardBtn" class="highlightOnHoverButton">Add Card</button>
     <a href="{{url_for('routeToIndex')}}">
       <button id="addCardBtn" class="highlightOnHoverButton">⤶</button></a
     >
-    <div id="cardsArea"></div>
+    <div id="cardsArea" style="height: 100%"></div>
     <script src="../static/js/cards.js"></script>
   </body>
 </html>

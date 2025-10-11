@@ -25,12 +25,46 @@
       <br />
       <div class="buttonList">
         <button class="highlightOnHoverButton" id="Help">Help</button>
-        <a href="index.html"
+        <a href="{{url_for('routeToIndex')}}"
           ><button class="highlightOnHoverButton" id="Home">Home</button></a
         >
         <button class="highlightOnHoverButton" id="GiveUp">Give up</button>
         <button class="highlightOnHoverButton" id="Check">Check</button>
         <button class="highlightOnHoverButton" id="Switch">Switch</button>
+      </div>
+      <div
+        id="helpModal"
+        style="
+          display: none;
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          background: #000a;
+          justify-content: center;
+          align-items: center;
+          z-index: 1000;
+        ">
+        <div
+          style="
+            background: #222;
+            padding: 2em;
+            border-radius: 10px;
+            text-align: center;
+            min-width: 250px;
+          ">
+          <h3>Choose Help Option</h3>
+          <button id="helpMultipleChoice" class="highlightOnHoverButton">
+            Multiple Choice
+          </button>
+          <button id="helpShowVowels" class="highlightOnHoverButton">
+            Show Vowels
+          </button>
+          <br /><br />
+          <button id="helpCancel" class="highlightOnHoverButton">Cancel</button>
+          <div id="helpChoices" style="margin-top: 1em"></div>
+        </div>
       </div>
     </main>
     <script src="../static/js/randomPractice.js"></script>
