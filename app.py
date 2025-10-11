@@ -1,4 +1,3 @@
-
 #==========================
 #         Imports
 #==========================
@@ -9,6 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import random
 import requests
 import os
+import json
 
 #==========================
 #          Init
@@ -19,6 +19,10 @@ app = Flask(__name__)
 app.secret_key = 'furryfemboy'
 
 DATABASE = 'database.db'
+
+def get_confidence_index(word_row):
+    # word_row: (id, userID, word, translation, pass, passWithHelp, fail, failWithHelp)
+    return (word_row[4] * 2) + (word_row[5]) - (word_row[6]) - (word_row[7] * 2)
 
 verboseLogging = True
 def debMes(msg):  # debug message
@@ -47,8 +51,6 @@ def init_db():
             userID INTEGER NOT NULL,
             word TEXT NOT NULL,
             translation TEXT NOT NULL,
-            origin TEXT NOT NULL, 
-            date DATE DEFAULT (CURRENT_DATE),
             pass INTEGER DEFAULT 0,
             passWithHelp INTEGER DEFAULT 0,
             fail INTEGER DEFAULT 0,
@@ -61,31 +63,26 @@ def init_db():
     conn.close()
 
 
-WORDS_FILE = "/media/user/DAT/ctest/words_alpha.txt"
+DICTIONARY_FILE = "dictionary.json"
+
+def get_random_dictionary_entry():
+    with open(DICTIONARY_FILE, "r", encoding='utf-8') as f:
+        data = json.load(f)
+        entries = data["dictionary"]
+    return random.choice(entries)
 
 def get_random_english_word():
-    with open(WORDS_FILE, "r") as f:
-        words = [line.strip() for line in f if line.strip()]
-    return random.choice(words)
+    entry = get_random_dictionary_entry()
+    return entry["english"]
 
 def translate_to_hungarian(word):
-    url = "https://libretranslate.de/translate"
-    data = {
-        "q": word,
-        "source": "en",
-        "target": "hu",
-        "format": "text"
-    }
-    try:
-        resp = requests.post(url, data=data, timeout=5)
-        print(f"Status code: {resp.status_code}")
-        print(f"Response text: {resp.text}")
-        resp.raise_for_status()
-        return resp.json()["translatedText"]
-    except Exception as e:
-        debMes(f"Translation error: {e}")
-        return ""
-
+    # We'll use the dictionary.json now, not an API
+    with open(DICTIONARY_FILE, "r", encoding='utf-8') as f:
+        data = json.load(f)
+        for entry in data["dictionary"]:
+            if entry["english"].lower() == word.lower():
+                return entry["hungarian"]
+    return ""
 
 #==========================
 #          Routes
@@ -168,7 +165,7 @@ def register():
     conn.commit()
     conn.close()
 
-    return jsonify({"status": "success", "message": "User registered successfully!"}), 201
+    return redirect('/login')
 
 
 
@@ -210,8 +207,6 @@ def add_word():
     debMes(f"Received userID: {user_id}")  # debug logging
     word = request.form.get('word')
     translation = request.form.get('translation')
-    origin = "user"
-    date = request.form.get('date', 0)  # Default to current date
     passCount = request.form.get('pass', 0)  # Default to 0
     passWithHelp = request.form.get('passWithHelp', 0)  # Default to 0
     failCount = request.form.get('fail', 0)  # Default to 0
@@ -220,8 +215,6 @@ def add_word():
     # Debugging: Print out all the form values
     debMes(f"Received word: {word}")
     debMes(f"Received translation: {translation}")
-    debMes(f"Received origin: {origin}")
-    debMes(f"Received date: {date}")
     debMes(f"Received passCount: {passCount}")
     debMes(f"Received passWithHelp: {passWithHelp}")
     debMes(f"Received failCount: {failCount}")
@@ -232,9 +225,9 @@ def add_word():
         cursor = conn.cursor()
 
         cursor.execute('''
-            INSERT INTO words (userID, word, translation, origin, date, pass, passWithHelp, fail, failWithHelp)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (user_id, word, translation, origin, date, passCount, passWithHelp, failCount, failWithHelp))
+            INSERT INTO words (userID, word, translation, pass, passWithHelp, fail, failWithHelp)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (user_id, word, translation, passCount, passWithHelp, failCount, failWithHelp))
 
         conn.commit()
         conn.close()
@@ -313,6 +306,9 @@ def update_score():
         cursor.execute('UPDATE words SET failWithHelp = failWithHelp + 1 WHERE id = ? AND userID = ?', (word_id, user_id))
     elif status == 'passWithHelp':
         cursor.execute('UPDATE words SET passWithHelp = passWithHelp + 1 WHERE id = ? AND userID = ?', (word_id, user_id))
+    else:
+        conn.close()
+        return jsonify({"status": "error", "message": "Unknown status!"}), 400
 
     conn.commit()
     conn.close()
@@ -345,8 +341,8 @@ def accept_word():
     if not word or not translation:
         return jsonify({"status": "error", "message": "Missing word or translation!"}), 400
 
-    origin = "machine"
-    date = 0  # or use current date
+
+
     passCount = 0
     passWithHelp = 0
     failCount = 0
@@ -355,9 +351,9 @@ def accept_word():
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO words (userID, word, translation, origin, date, pass, passWithHelp, fail, failWithHelp)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (user_id, word, translation, origin, date, passCount, passWithHelp, failCount, failWithHelp))
+        INSERT INTO words (userID, word, translation, pass, passWithHelp, fail, failWithHelp)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (user_id, word, translation, passCount, passWithHelp, failCount, failWithHelp))
     conn.commit()
     conn.close()
     return jsonify({"status": "success", "message": "Word accepted and added!"}), 200
@@ -367,10 +363,9 @@ def recommend_word():
     if 'userID' not in session:
         return jsonify({"status": "error", "message": "User not logged in!"}), 400
 
-    english_word = get_random_english_word()
-    translation = translate_to_hungarian(english_word)
-    if not translation:
-        return jsonify({"status": "error", "message": "Translation failed!"}), 500
+    entry = get_random_dictionary_entry()
+    english_word = entry["english"]
+    translation = entry["hungarian"]
 
     return jsonify({
         "status": "success",
@@ -378,6 +373,164 @@ def recommend_word():
         "translation": translation
     })
 
+@app.route('/get_choices', methods=['POST'])
+def get_choices():
+    """
+    Given a word_id and direction, return the correct answer and 3 random other answers.
+    direction: true (word->translation), false (translation->word)
+    """
+    if 'userID' not in session:
+        return jsonify({"status": "error", "message": "User not logged in!"}), 400
+
+    user_id = session['userID']
+    data = request.get_json()
+    word_id = data.get('word_id')
+    direction = data.get('direction') # true: word->translation, false: translation->word
+
+    if word_id is None or direction is None:
+        return jsonify({"status": "error", "message": "Missing parameters!"}), 400
+
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    # Get the correct answer
+    cursor.execute('SELECT word, translation FROM words WHERE id=? AND userID=?', (word_id, user_id))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        return jsonify({"status": "error", "message": "Word not found!"}), 404
+
+    correct = row[1] if direction else row[0]
+
+    # Get all possible choices, excluding the correct one
+    if direction:
+        cursor.execute('SELECT translation FROM words WHERE userID=? AND id <> ?', (user_id, word_id))
+        all_choices = [r[0] for r in cursor.fetchall()]
+    else:
+        cursor.execute('SELECT word FROM words WHERE userID=? AND id <> ?', (user_id, word_id))
+        all_choices = [r[0] for r in cursor.fetchall()]
+    conn.close()
+
+    # Pick 3 random incorrect ones (or fewer if not enough)
+    import random
+    random.shuffle(all_choices)
+    choices = all_choices[:3]
+    choices.append(correct)
+    random.shuffle(choices)
+
+    return jsonify({
+        "status": "success",
+        "choices": choices,
+        "correct": correct
+    }), 200
+
+@app.route('/get_learning_words', methods=['GET'])
+def get_learning_words():
+    """Get a list of word_ids for learning mode (negative confidence, or lowest confidence)."""
+    if 'userID' not in session:
+        return jsonify({"status": "error", "message": "User not logged in!"}), 400
+
+    user_id = session['userID']
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM words WHERE userID = ?', (user_id,))
+    words = cursor.fetchall()
+    conn.close()
+
+    if not words:
+        return jsonify({"status": "error", "message": "No words found for the user!"}), 400
+
+    # Calculate confidenceIndex for each word
+    word_infos = []
+    for w in words:
+        ci = get_confidence_index(w)
+        word_infos.append({'word_id': w[0], 'confidenceIndex': ci})
+
+    negative = [x for x in word_infos if x['confidenceIndex'] < 0]
+    # If less than 5 negative, add up to 10 words with lowest confidenceIndex
+    if len(negative) < 5:
+        word_infos_sorted = sorted(word_infos, key=lambda x: x['confidenceIndex'])
+        # avoid duplicates
+        added = {w['word_id'] for w in negative}
+        for w in word_infos_sorted:
+            if len(negative) >= 10:
+                break
+            if w['word_id'] not in added:
+                negative.append(w)
+                added.add(w['word_id'])
+
+    # Only return the word_ids
+    return jsonify({
+        "status": "success",
+        "word_ids": [x['word_id'] for x in negative]
+    })
+
+@app.route('/get_word_by_id', methods=['POST'])
+def get_word_by_id():
+    if 'userID' not in session:
+        return jsonify({"status": "error", "message": "User not logged in!"}), 400
+    user_id = session['userID']
+    word_id = request.json.get('word_id')
+    if not word_id:
+        return jsonify({"status": "error", "message": "Missing word_id!"}), 400
+
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM words WHERE id = ? AND userID = ?', (word_id, user_id))
+    word = cursor.fetchone()
+    conn.close()
+    if not word:
+        return jsonify({"status": "error", "message": "Word not found!"}), 404
+
+    return jsonify({
+        "status": "success",
+        "word_id": word[0],
+        "word": word[2],
+        "translation": word[3]
+    })
+
+import math
+
+@app.route('/recommend_smart_word', methods=['GET'])
+def recommend_smart_word():
+    if 'userID' not in session:
+        return jsonify({"status": "error", "message": "User not logged in!"}), 400
+
+    user_id = session['userID']
+
+    # Get user's current English words
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('SELECT word FROM words WHERE userID = ?', (user_id,))
+    user_words = set(row[0].strip().lower() for row in cursor.fetchall())
+    conn.close()
+
+    # Calculate average length
+    if not user_words:
+        avg_len = 5  # fallback, e.g., if user has no words yet
+    else:
+        avg_len = sum(len(w) for w in user_words) / len(user_words)
+
+    # Get 10 random words from dictionary.json not already in user's list
+    with open(DICTIONARY_FILE, "r", encoding='utf-8') as f:
+        data = json.load(f)
+        all_entries = [entry for entry in data["dictionary"] if entry["english"].strip().lower() not in user_words]
+
+    if not all_entries:
+        return jsonify({"status": "error", "message": "No more new words to recommend!"}), 400
+
+    sample_entries = random.sample(all_entries, min(10, len(all_entries)))
+
+    # Find the entry with length closest to avg_len
+    def length_metric(entry):
+        return abs(len(entry["english"]) - avg_len)
+
+    best_entry = min(sample_entries, key=length_metric)
+
+    return jsonify({
+        "status": "success",
+        "word": best_entry["english"],
+        "translation": best_entry["hungarian"]
+    })
 #==========================
 #           Run
 #==========================
@@ -385,4 +538,3 @@ def recommend_word():
 if __name__ == '__main__':
     init_db()  # Initialize the database with the tables
     app.run(debug=True)
-
