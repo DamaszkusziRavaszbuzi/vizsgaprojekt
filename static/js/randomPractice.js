@@ -288,6 +288,7 @@ document.getElementById("helpMultipleChoice").onclick = function () {
         const btn = document.createElement("button");
         btn.className = "highlightOnHoverButton";
         btn.innerText = choice;
+        btn.style = "padding: 8px; margin: 3px;";
         btn.onclick = () => {
           inputField.value = choice;
           hideHelpModal();

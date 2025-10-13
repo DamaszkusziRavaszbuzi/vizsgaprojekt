@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Word Statistics</title>
+    <link rel="stylesheet" href="../static/styles/global.css" />
+    <link rel="stylesheet" href="../static/styles/themes/themeDark.css" />
+    <style>
+      .content {
+        margin-left: 15%;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .stats-table {
+        width: 90%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        background-color: var(--Sbackground);
+        border: 2px solid var(--outline);
+      }
+
+      .stats-table th,
+      .stats-table td {
+        padding: 12px;
+        text-align: left;
+        border: 1px solid var(--outline);
+        color: var(--text);
+      }
+
+      .stats-table th {
+        background-color: var(--Cbackground);
+        color: var(--HighlightText);
+      }
+
+      .stats-table tr:hover {
+        background-color: var(--Cbackground);
+      }
+
+      .confidence-positive {
+        color: rgb(0, 255, 0);
+      }
+
+      .confidence-negative {
+        color: var(--error);
+      }
+
+      .confidence-neutral {
+        color: var(--text);
+      }
+
+      .sort-button {
+        background: none;
+        border: none;
+        color: var(--HighlightText);
+        cursor: pointer;
+        padding: 0 5px;
+      }
+
+      .sort-button:hover {
+        color: var(--white);
+      }
+
+      .stats-summary {
+        background-color: var(--Sbackground);
+        border: 2px solid var(--outline);
+        padding: 20px;
+        margin-bottom: 20px;
+        color: var(--text);
+        width: 90%;
+      }
+
+      .stats-summary h2 {
+        color: var(--HighlightText);
+        margin-top: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidenav">
+      <a href="/home">Home</a>
+      <a href="/new">New</a>
+      <a href="/practice">Practice</a>
+      <a href="/cards">Cards</a>
+      <a href="/edit">Edit</a>
+      <a href="/statistics">Statistics</a>
+    </div>
+
+    <div class="content">
+      <h1>Word Statistics</h1>
+
+      <div class="stats-summary" id="summary">
+        <h2>Summary</h2>
+        <p>Total Words: <span id="totalWords">0</span></p>
+        <p>Average Confidence: <span id="avgConfidence">0</span></p>
+        <p>Words with Positive Confidence: <span id="positiveWords">0</span></p>
+        <p>Words with Negative Confidence: <span id="negativeWords">0</span></p>
+      </div>
+
+      <table class="stats-table">
+        <thead>
+          <tr>
+            <th>
+              Word <button class="sort-button" data-sort="word">↕</button>
+            </th>
+            <th>
+              Translation
+              <button class="sort-button" data-sort="translation">↕</button>
+            </th>
+            <th>
+              Pass <button class="sort-button" data-sort="pass">↕</button>
+            </th>
+            <th>
+              Pass with Help
+              <button class="sort-button" data-sort="passWithHelp">↕</button>
+            </th>
+            <th>
+              Fail <button class="sort-button" data-sort="fail">↕</button>
+            </th>
+            <th>
+              Fail with Help
+              <button class="sort-button" data-sort="failWithHelp">↕</button>
+            </th>
+            <th>
+              Confidence Index
+              <button class="sort-button" data-sort="confidenceIndex">↕</button>
+            </th>
+          </tr>
+        </thead>
+        <tbody id="statsBody">
+          <!-- Data will be populated here -->
+        </tbody>
+      </table>
+    </div>
+
+    <script>
+      let words = [];
+      let currentSort = { column: "word", ascending: true };
+
+      function updateSummary() {
+        const totalWords = words.length;
+        const avgConfidence =
+          words.reduce((acc, word) => acc + word.confidenceIndex, 0) /
+          totalWords;
+        const positiveWords = words.filter(
+          (word) => word.confidenceIndex > 0
+        ).length;
+        const negativeWords = words.filter(
+          (word) => word.confidenceIndex < 0
+        ).length;
+
+        document.getElementById("totalWords").textContent = totalWords;
+        document.getElementById("avgConfidence").textContent =
+          avgConfidence.toFixed(2);
+        document.getElementById("positiveWords").textContent = positiveWords;
+        document.getElementById("negativeWords").textContent = negativeWords;
+      }
+
+      function getConfidenceClass(confidence) {
+        if (confidence > 0) return "confidence-positive";
+        if (confidence < 0) return "confidence-negative";
+        return "confidence-neutral";
+      }
+
+      function sortWords(column) {
+        if (currentSort.column === column) {
+          currentSort.ascending = !currentSort.ascending;
+        } else {
+          currentSort.column = column;
+          currentSort.ascending = true;
+        }
+
+        words.sort((a, b) => {
+          let comparison = 0;
+          if (typeof a[column] === "string") {
+            comparison = a[column].localeCompare(b[column]);
+          } else {
+            comparison = a[column] - b[column];
+          }
+          return currentSort.ascending ? comparison : -comparison;
+        });
+
+        displayWords();
+      }
+
+      function displayWords() {
+        const tbody = document.getElementById("statsBody");
+        tbody.innerHTML = "";
+
+        words.forEach((word) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+                    <td>${word.word}</td>
+                    <td>${word.translation}</td>
+                    <td>${word.pass}</td>
+                    <td>${word.passWithHelp}</td>
+                    <td>${word.fail}</td>
+                    <td>${word.failWithHelp}</td>
+                    <td class="${getConfidenceClass(word.confidenceIndex)}">${
+            word.confidenceIndex
+          }</td>
+                `;
+          tbody.appendChild(row);
+        });
+      }
+
+      function loadStatistics() {
+        fetch("/get_word_statistics")
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.status === "success") {
+              words = data.words;
+              updateSummary();
+              displayWords();
+            }
+          });
+      }
+
+      // Add event listeners for sorting
+      document.querySelectorAll(".sort-button").forEach((button) => {
+        button.addEventListener("click", (e) => {
+          const column = e.target.getAttribute("data-sort");
+          sortWords(column);
+        });
+      });
+
+      // Load statistics when the page loads
+      document.addEventListener("DOMContentLoaded", loadStatistics);
+    </script>
+  </body>
+</html>

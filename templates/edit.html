@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edit Words</title>
+    <link rel="stylesheet" href="../static/styles/global.css" />
+    <link rel="stylesheet" href="../static/styles/themes/themeDark.css" />
+    <style>
+      .content {
+        margin-left: 15%;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .word-table {
+        width: 90%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        background-color: var(--Sbackground);
+        border: 2px solid var(--outline);
+      }
+
+      .word-table th,
+      .word-table td {
+        padding: 12px;
+        text-align: left;
+        border: 1px solid var(--outline);
+        color: var(--text);
+      }
+
+      .word-table th {
+        background-color: var(--Cbackground);
+        color: var(--HighlightText);
+      }
+
+      .word-row:hover {
+        background-color: var(--Cbackground);
+      }
+
+      .button {
+        padding: 8px 16px;
+        margin: 2px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.1s ease-in-out;
+      }
+
+      .edit-button {
+        background-color: var(--Sbackground);
+        color: var(--text);
+        box-shadow: 0 6px var(--text);
+      }
+
+      .edit-button:hover {
+        color: var(--HighlightText);
+        box-shadow: 0 10px var(--HighlightText);
+        transform: translateY(-4px);
+      }
+
+      .edit-button:active {
+        box-shadow: 0 2px var(--text);
+        transform: translateY(2px);
+      }
+
+      .delete-button {
+        background-color: var(--error);
+        color: var(--white);
+        box-shadow: 0 6px darkred;
+      }
+
+      .delete-button:hover {
+        box-shadow: 0 10px darkred;
+        transform: translateY(-4px);
+      }
+
+      .delete-button:active {
+        box-shadow: 0 2px darkred;
+        transform: translateY(2px);
+      }
+
+      .save-button {
+        background-color: var(--Sbackground);
+        color: rgb(0, 255, 0);
+        box-shadow: 0 6px darkgreen;
+        display: none;
+      }
+
+      .save-button:hover {
+        box-shadow: 0 10px darkgreen;
+        transform: translateY(-4px);
+      }
+
+      .save-button:active {
+        box-shadow: 0 2px darkgreen;
+        transform: translateY(2px);
+      }
+
+      .cancel-button {
+        background-color: var(--Sbackground);
+        color: var(--text);
+        box-shadow: 0 6px gray;
+        display: none;
+      }
+
+      .cancel-button:hover {
+        box-shadow: 0 10px gray;
+        transform: translateY(-4px);
+      }
+
+      .cancel-button:active {
+        box-shadow: 0 2px gray;
+        transform: translateY(2px);
+      }
+
+      .input-field {
+        width: 90%;
+        padding: 8px;
+        background: var(--Sbackground);
+        border: 2px solid var(--outline);
+        color: var(--text);
+        border-radius: 4px;
+      }
+
+      .input-field:focus {
+        outline: none;
+        border-color: var(--HighlightText);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sidenav">
+      <a href="/home">Home</a>
+      <a href="/new">New</a>
+      <a href="/practice">Practice</a>
+      <a href="/cards">Cards</a>
+      <a href="/edit">Edit</a>
+      <a href="/statistics">Statistics</a>
+    </div>
+
+    <div class="content">
+      <h1>Edit Words</h1>
+      <table class="word-table">
+        <thead>
+          <tr>
+            <th>Word</th>
+            <th>Translation</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="wordsList">
+          <!-- Words will be populated here -->
+        </tbody>
+      </table>
+    </div>
+
+    <script>
+      function loadWords() {
+        fetch("/get_user_words")
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.status === "success") {
+              const wordsList = document.getElementById("wordsList");
+              wordsList.innerHTML = "";
+
+              data.words.forEach((word) => {
+                const row = document.createElement("tr");
+                row.className = "word-row";
+                row.setAttribute("data-word-id", word.id);
+
+                row.innerHTML = `
+                                <td class="word-cell">${word.word}</td>
+                                <td class="translation-cell">${word.translation}</td>
+                                <td>
+                                    <button class="button edit-button">Edit</button>
+                                    <button class="button delete-button">Delete</button>
+                                    <button class="button save-button">Save</button>
+                                    <button class="button cancel-button">Cancel</button>
+                                </td>
+                            `;
+                wordsList.appendChild(row);
+              });
+            }
+          });
+      }
+
+      function deleteWord(wordId) {
+        if (confirm("Are you sure you want to delete this word?")) {
+          fetch("/delete_word", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ word_id: wordId }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.status === "success") {
+                loadWords();
+              }
+            });
+        }
+      }
+
+      function updateWord(wordId, word, translation) {
+        fetch("/update_word", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            word_id: wordId,
+            word: word,
+            translation: translation,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.status === "success") {
+              loadWords();
+            }
+          });
+      }
+
+      document
+        .getElementById("wordsList")
+        .addEventListener("click", function (e) {
+          const row = e.target.closest(".word-row");
+          if (!row) return;
+
+          const wordId = row.getAttribute("data-word-id");
+          const wordCell = row.querySelector(".word-cell");
+          const translationCell = row.querySelector(".translation-cell");
+          const editButton = row.querySelector(".edit-button");
+          const deleteButton = row.querySelector(".delete-button");
+          const saveButton = row.querySelector(".save-button");
+          const cancelButton = row.querySelector(".cancel-button");
+
+          if (e.target.classList.contains("delete-button")) {
+            deleteWord(wordId);
+          } else if (e.target.classList.contains("edit-button")) {
+            // Store original values
+            const originalWord = wordCell.textContent;
+            const originalTranslation = translationCell.textContent;
+
+            // Replace text with input fields
+            wordCell.innerHTML = `<input type="text" class="input-field" value="${originalWord}">`;
+            translationCell.innerHTML = `<input type="text" class="input-field" value="${originalTranslation}">`;
+
+            // Toggle buttons
+            editButton.style.display = "none";
+            deleteButton.style.display = "none";
+            saveButton.style.display = "inline";
+            cancelButton.style.display = "inline";
+
+            // Store original content for cancel
+            row.setAttribute("data-original-word", originalWord);
+            row.setAttribute("data-original-translation", originalTranslation);
+          } else if (e.target.classList.contains("save-button")) {
+            const newWord = row.querySelector(".word-cell input").value;
+            const newTranslation = row.querySelector(
+              ".translation-cell input"
+            ).value;
+
+            updateWord(wordId, newWord, newTranslation);
+          } else if (e.target.classList.contains("cancel-button")) {
+            // Restore original content
+            wordCell.textContent = row.getAttribute("data-original-word");
+            translationCell.textContent = row.getAttribute(
+              "data-original-translation"
+            );
+
+            // Toggle buttons back
+            editButton.style.display = "inline";
+            deleteButton.style.display = "inline";
+            saveButton.style.display = "none";
+            cancelButton.style.display = "none";
+          }
+        });
+
+      // Load words when the page loads
+      document.addEventListener("DOMContentLoaded", loadWords);
+    </script>
+  </body>
+</html>
