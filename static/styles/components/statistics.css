@@ -1,0 +1,70 @@
+.content {
+  margin-left: 15%;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stats-table {
+  width: 90%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background-color: var(--Sbackground);
+  border: 2px solid var(--outline);
+}
+
+.stats-table th,
+.stats-table td {
+  padding: 12px;
+  text-align: left;
+  border: 1px solid var(--outline);
+  color: var(--text);
+}
+
+.stats-table th {
+  background-color: var(--Cbackground);
+  color: var(--HighlightText);
+}
+
+.stats-table tr:hover {
+  background-color: var(--Cbackground);
+}
+
+.confidence-positive {
+  color: rgb(0, 255, 0);
+}
+
+.confidence-negative {
+  color: var(--error);
+}
+
+.confidence-neutral {
+  color: var(--text);
+}
+
+.sort-button {
+  background: none;
+  border: none;
+  color: var(--HighlightText);
+  cursor: pointer;
+  padding: 0 5px;
+}
+
+.sort-button:hover {
+  color: var(--white);
+}
+
+.stats-summary {
+  background-color: var(--Sbackground);
+  border: 2px solid var(--outline);
+  padding: 20px;
+  margin-bottom: 20px;
+  color: var(--text);
+  width: 90%;
+}
+
+.stats-summary h2 {
+  color: var(--HighlightText);
+  margin-top: 0;
+}

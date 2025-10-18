@@ -6,26 +6,7 @@
     <title>Gyakorlás</title>
     <link rel="stylesheet" href="../static/styles/components/practice.css" />
     <link rel="stylesheet" href="../static/styles/global.css" />
-
-    <!-- inline script to choose theme early (avoid FOUC) -->
-    <script>
-      (function () {
-        try {
-          var stored = localStorage.getItem("theme");
-          if (stored) {
-            // by setting window.__preferredTheme we can later use it in the <link> below
-            window.__preferredTheme = stored;
-          } else {
-            // if server injected theme exists it'll be set by template variable below
-            window.__preferredTheme = null;
-          }
-        } catch (e) {
-          window.__preferredTheme = null;
-        }
-      })();
-    </script>
-
-    <!-- Theme stylesheet link (has id so JS can swap it instantly) -->
+    <script src="../static/js/styleLoader.js"></script>
     <link
       id="themeStylesheet"
       rel="stylesheet"
