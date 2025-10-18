@@ -5,15 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>gecis vizsgaprojekt</title>
     <link rel="stylesheet" href="../static/styles/global.css" />
-    <link rel="stylesheet" href="../static/styles/themes/themeDark.css" />
     <link rel="stylesheet" href="../static/styles/components/mainMenu.css" />
+    <!-- Paste into the <head> of your base template (or each page). It uses two strategies:
+     - For logged-in users, the server injects {{ theme }} and we point the <link> to it.
+     - For visitors, an inline script checks localStorage and sets the href before the CSS loads
+-->
+    <!-- inline script to choose theme early (avoid FOUC) -->
+    <script>
+      (function () {
+        // server-side injected theme (for logged in users) is rendered into this placeholder
+        // We'll check localStorage first for unauthenticated users
+        try {
+          var stored = localStorage.getItem("theme");
+          if (stored) {
+            // by setting window.__preferredTheme we can later use it in the <link> below
+            window.__preferredTheme = stored;
+          } else {
+            // if server injected theme exists it'll be set by template variable below
+            window.__preferredTheme = null;
+          }
+        } catch (e) {
+          window.__preferredTheme = null;
+        }
+      })();
+    </script>
+
+    <!-- Theme stylesheet link (has id so JS can swap it instantly) -->
+    <link
+      id="themeStylesheet"
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles/themes/' + (theme or 'themeDark') + '.css') }}" />
   </head>
   <body>
     <main>
       <div class="sidenav">
-        <a href="">Fiók</a>
         <a href="{{url_for('routeToEdit')}}">Szavak kezelése</a>
-        <a href="">Beálltások</a>
+        <a href="{{url_for('routeToSettings')}}">Beálltások</a>
         <a href="{{url_for('routeToStatistics')}}">Statisztika</a>
         <a href="{{url_for('logout')}}">Kijelentkezés</a>
       </div>
@@ -63,5 +90,6 @@
         </table>
       </div>
     </main>
+    <script src="../static/js/themeChange.js"></script>
   </body>
 </html>

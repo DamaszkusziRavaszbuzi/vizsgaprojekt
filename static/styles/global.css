@@ -128,3 +128,23 @@ a {
 .highlightOnHoverButton:active {
   transform: translateY(2px);
 }
+#addCardBtn {
+  position: fixed;
+  top: 32px;
+  left: 32px;
+  z-index: 100;
+  padding: 12px 26px;
+  font-size: 1.2em;
+}
+
+#addCardBtn {
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.1s ease-in-out;
+  position: relative;
+}
+
+#addCardBtn:active {
+  transform: translateY(2px);
+}

@@ -1,55 +1,302 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <title>Settings Page</title>
-    <link rel="stylesheet" href="../styles/global.css" />
-    <link rel="stylesheet" href="../styles/themes/themeDark.css" />
-    <link rel="stylesheet" href="../styles/components/mainMenu.css" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Settings</title>
+    <link rel="stylesheet" href="../static/styles/global.css" />
+
+    <!-- Paste into the <head> of your base template (or each page). It uses two strategies:
+     - For logged-in users, the server injects {{ theme }} and we point the <link> to it.
+     - For visitors, an inline script checks localStorage and sets the href before the CSS loads
+-->
+    <!-- inline script to choose theme early (avoid FOUC) -->
+    <script>
+      (function () {
+        // server-side injected theme (for logged in users) is rendered into this placeholder
+        // We'll check localStorage first for unauthenticated users
+        try {
+          var stored = localStorage.getItem("theme");
+          if (stored) {
+            // by setting window.__preferredTheme we can later use it in the <link> below
+            window.__preferredTheme = stored;
+          } else {
+            // if server injected theme exists it'll be set by template variable below
+            window.__preferredTheme = null;
+          }
+        } catch (e) {
+          window.__preferredTheme = null;
+        }
+      })();
+    </script>
+
+    <!-- Theme stylesheet link (has id so JS can swap it instantly) -->
+    <link
+      id="themeStylesheet"
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles/themes/' + (theme or 'themeDark') + '.css') }}" />
+    <style>
+      .content {
+        margin-left: 15%;
+        padding: 28px 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 18px;
+        color: var(--text);
+      }
+
+      .panel {
+        width: 90%;
+        max-width: 900px;
+        background: var(--Sbackground);
+        border: 2px solid var(--outline);
+        padding: 20px;
+        border-radius: 6px;
+        box-sizing: border-box;
+      }
+
+      h1 {
+        margin: 0 0 10px 0;
+        color: var(--text);
+      }
+
+      label {
+        display: block;
+        margin: 12px 0 6px 0;
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      .form-row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .inputFieldSmall {
+        width: 300px;
+        height: 40px;
+        padding: 8px 10px;
+        border-radius: 4px;
+        border: 2px solid var(--outline);
+        background: var(--Sbackground);
+        color: var(--text);
+        font-size: 16px;
+      }
+
+      .form-actions {
+        margin-top: 16px;
+        display: flex;
+        gap: 12px;
+        justify-content: flex-start;
+        align-items: center;
+      }
+
+      .btn {
+        padding: 10px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        border: none;
+        color: var(--text);
+        background: var(--Sbackground);
+        box-shadow: 0 6px var(--text);
+      }
+
+      .btn.primary {
+        color: var(--HighlightText);
+        box-shadow: 0 6px var(--HighlightText);
+      }
+
+      .btn.warn {
+        color: var(--white);
+        background: var(--error);
+        box-shadow: 0 6px rgba(255, 0, 0, 0.4);
+      }
+
+      .message {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 4px;
+        display: none;
+      }
+      .message.success {
+        background: rgba(0, 255, 0, 0.08);
+        color: rgb(0, 255, 0);
+        border: 1px solid rgba(0, 255, 0, 0.12);
+        display: none;
+      }
+      .message.error {
+        background: rgba(255, 0, 0, 0.06);
+        color: var(--error);
+        border: 1px solid rgba(255, 0, 0, 0.12);
+        display: none;
+      }
+
+      .theme-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      select.inputFieldSmall {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        padding-right: 14px;
+      }
+    </style>
   </head>
   <body>
-    <h1>Settings</h1>
+    <div class="sidenav">
+      <a href="{{url_for('routeToIndex')}}">Főoldal</a>
+      <a href="{{url_for('routeToEdit')}}">Szavak kezelése</a>
+      <a href="{{url_for('routeToSettings')}}">Beálltások</a>
+      <a href="{{url_for('routeToStatistics')}}">Statisztika</a>
+      <a href="{{url_for('logout')}}">Kijelentkezés</a>
+    </div>
 
-    <form action="/save-settings" method="post">
-      <!-- Dropdown Menu -->
-      <label for="theme">Select Theme:</label>
-      <select id="theme" name="theme">
-        <option value="light">Light</option>
-        <option value="dark">Dark</option>
-        <option value="system">System Default</option>
-      </select>
-      <br /><br />
+    <div class="content">
+      <h1>Beállítások</h1>
 
-      <!-- Checkboxes -->
-      <fieldset>
-        <legend>Notification Settings:</legend>
-        <input type="checkbox" id="email" name="notifications" value="email" />
-        <label for="email">Email</label><br />
+      <div class="panel" aria-labelledby="account-heading">
+        <h2 id="account-heading" class="title">Fiók</h2>
+        <label for="username">Felhasználónév</label>
+        <input
+          id="username"
+          class="inputFieldSmall"
+          type="text"
+          placeholder="A neved" />
 
-        <input type="checkbox" id="sms" name="notifications" value="sms" />
-        <label for="sms">SMS</label><br />
+        <label for="password">Új jelszó</label>
+        <input
+          id="password"
+          class="inputFieldSmall"
+          type="password"
+          placeholder="Hagyd üresen a jelenlegi jelszó megtartásához" />
 
-        <input type="checkbox" id="push" name="notifications" value="push" />
-        <label for="push">Push Notifications</label>
-      </fieldset>
-      <br />
+        <div class="form-actions">
+          <button id="saveBtn" class="btn primary highlightOnHoverButton">
+            Mentés
+          </button>
+          <button id="logoutBtn" class="btn warn highlightOnHoverButton">
+            Kijelentkezés
+          </button>
+          <div id="msg" class="message"></div>
+        </div>
+      </div>
 
-      <!-- Radio Buttons -->
-      <fieldset>
-        <legend>Language Preference:</legend>
-        <input type="radio" id="english" name="language" value="en" checked />
-        <label for="english">English</label><br />
+      <div class="panel">
+        <h2 class="title">Megjelenés</h2>
+        <p>Válassz témát</p>
+        <div class="theme-row">
+          <label for="themeSelect">Témák:</label>
+          <select id="themeSelect" class="inputFieldSmall">
+            <option value="themeDark">Sötét Narancs</option>
+            <option value="themeDarkGreen">Sötét Zöld</option>
+            <option value="themeDarkPurple">Sötét Lila</option>
+          </select>
+          <button id="applyThemeBtn" class="btn highlightOnHoverButton">
+            Mentés
+          </button>
+        </div>
+      </div>
+    </div>
 
-        <input type="radio" id="spanish" name="language" value="es" />
-        <label for="spanish">Spanish</label><br />
+    <script src="../static/js/themeChange.js"></script>
+    <script>
+      // Utilities to show messages
+      function showMessage(text, type = "success") {
+        const el = document.getElementById("msg");
+        el.textContent = text;
+        el.className = "message " + (type === "error" ? "error" : "success");
+        el.style.display = "block";
+        setTimeout(() => {
+          el.style.display = "none";
+        }, 4000);
+      }
 
-        <input type="radio" id="french" name="language" value="fr" />
-        <label for="french">French</label>
-      </fieldset>
-      <br />
+      // Load current username
+      function loadUserInfo() {
+        fetch("/get_user_info")
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.status === "success") {
+              document.getElementById("username").value =
+                data.user.username || "";
+            } else {
+              showMessage(
+                data.message || "Hiba a felhasználó adatainak betöltése közben",
+                "error"
+              );
+            }
+          })
+          .catch(() => showMessage("Hálózati hiba", "error"));
+      }
 
-      <!-- Submit Button -->
-      <input type="submit" value="Save Settings" />
-    </form>
+      // Update user info
+      function saveChanges() {
+        const username = document.getElementById("username").value.trim();
+        const password = document.getElementById("password").value;
+
+        if (!username) {
+          showMessage("A felhasználónév nem lehet üres", "error");
+          return;
+        }
+
+        fetch("/update_user", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        })
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.status === "success") {
+              showMessage("Beállítások mentve", "success");
+              document.getElementById("password").value = "";
+            } else {
+              showMessage(
+                data.message || "Hiba a beállítások mentése közben",
+                "error"
+              );
+            }
+          })
+          .catch(() => showMessage("Hálózati hiba", "error"));
+      }
+
+      // Logout (re-uses your /logout endpoint)
+      function logout() {
+        fetch("/logout", { method: "POST" })
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.status === "success") {
+              // Redirect to login
+              window.location.href = "/login";
+            } else {
+              showMessage("Sikertelen kijelentkezés", "error");
+            }
+          })
+          .catch(() => showMessage("Hálózati hiba", "error"));
+      }
+
+      // Theme apply placeholder
+      function applyTheme() {
+        const theme = document.getElementById("themeSelect").value;
+        showMessage("Téma megváltoztatva: " + theme);
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        loadUserInfo();
+        document
+          .getElementById("saveBtn")
+          .addEventListener("click", saveChanges);
+        document.getElementById("logoutBtn").addEventListener("click", logout);
+        document
+          .getElementById("applyThemeBtn")
+          .addEventListener("click", applyTheme);
+      });
+    </script>
   </body>
 </html>

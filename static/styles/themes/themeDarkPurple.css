@@ -1,0 +1,115 @@
+:root {
+  --Pbackground: rgb(46, 46, 46); /*Primary background*/
+  --Sbackground: black; /*Secondary background*/
+  --Cbackground: rgb(20, 20, 20); /*Card background*/
+  --outline: rgb(97, 0, 187);
+  --text: rgb(97, 0, 187);
+  --HighlightBackground: rgb(57, 0, 121);
+  --HighlightText: rgb(132, 0, 255);
+  --error: rgb(255, 0, 0);
+  --white: rgb(255, 255, 255);
+}
+
+.highlightOnHoverButton {
+  background-color: var(--Sbackground);
+  box-shadow: 0 6px var(--text);
+  color: var(--text);
+}
+
+.highlightOnHoverButton:hover {
+  color: var(--HighlightText);
+  box-shadow: 0 10px var(--HighlightText);
+}
+
+.highlightOnHoverButton:active {
+  box-shadow: 0 2px var(--text);
+}
+
+.sidenav {
+  background-color: var(--Sbackground);
+}
+
+.sidenav a {
+  color: var(--text);
+}
+
+.sidenav a:hover {
+  color: var(--HighlightText);
+}
+
+body {
+  background-color: var(--Pbackground);
+}
+.inputField {
+  background: var(--Sbackground);
+  border-color: var(--outline);
+  color: var(--text);
+}
+
+.buttonList button {
+  background-color: var(--Sbackground);
+  border-color: var(--outline);
+  color: var(--text);
+}
+
+.wordDisplay {
+  border-color: var(--outline);
+  color: var(--text);
+  background-color: var(--Sbackground);
+}
+
+h1 {
+  color: var(--text);
+}
+
+#addCardBtn {
+  background-color: var(--Sbackground);
+  box-shadow: 0 6px var(--text);
+  color: var(--text);
+}
+
+#addCardBtn:hover {
+  color: var(--HighlightText);
+  box-shadow: 0 10px var(--HighlightText);
+}
+
+#addCardBtn:active {
+  box-shadow: 0 2px var(--text);
+}
+.card-front,
+.card-back {
+  border: 3px solid var(--outline);
+}
+
+.card-front {
+  background: var(--Sbackground);
+  color: var(--text);
+}
+.card-back {
+  background: var(--Cbackground);
+  color: var(--HighlightText);
+}
+.placeholder-text {
+  color: var(--text);
+}
+.form-container {
+  background: var(--Cbackground);
+}
+
+.form-container input {
+  background: var(--Sbackground);
+  border: 2px solid var(--outline);
+  color: var(--text);
+}
+.form-container input::placeholder {
+  color: var(--text);
+}
+
+.title {
+  color: var(--HighlightText);
+}
+
+.error-message {
+  color: var(--white);
+  background: var(--error);
+}

@@ -5,7 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Word Statistics</title>
     <link rel="stylesheet" href="../static/styles/global.css" />
-    <link rel="stylesheet" href="../static/styles/themes/themeDark.css" />
+    <!-- Paste into the <head> of your base template (or each page). It uses two strategies:
+     - For logged-in users, the server injects {{ theme }} and we point the <link> to it.
+     - For visitors, an inline script checks localStorage and sets the href before the CSS loads
+-->
+    <!-- inline script to choose theme early (avoid FOUC) -->
+    <script>
+      (function () {
+        // server-side injected theme (for logged in users) is rendered into this placeholder
+        // We'll check localStorage first for unauthenticated users
+        try {
+          var stored = localStorage.getItem("theme");
+          if (stored) {
+            // by setting window.__preferredTheme we can later use it in the <link> below
+            window.__preferredTheme = stored;
+          } else {
+            // if server injected theme exists it'll be set by template variable below
+            window.__preferredTheme = null;
+          }
+        } catch (e) {
+          window.__preferredTheme = null;
+        }
+      })();
+    </script>
+
+    <!-- Theme stylesheet link (has id so JS can swap it instantly) -->
+    <link
+      id="themeStylesheet"
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles/themes/' + (theme or 'themeDark') + '.css') }}" />
     <style>
       .content {
         margin-left: 15%;
@@ -81,51 +109,48 @@
   </head>
   <body>
     <div class="sidenav">
-      <a href="/home">Home</a>
-      <a href="/new">New</a>
-      <a href="/practice">Practice</a>
-      <a href="/cards">Cards</a>
-      <a href="/edit">Edit</a>
-      <a href="/statistics">Statistics</a>
+      <a href="{{url_for('routeToIndex')}}">Főoldal</a>
+      <a href="{{url_for('routeToEdit')}}">Szavak kezelése</a>
+      <a href="{{url_for('routeToSettings')}}">Beálltások</a>
+      <a href="{{url_for('routeToStatistics')}}">Statisztika</a>
+      <a href="{{url_for('logout')}}">Kijelentkezés</a>
     </div>
 
     <div class="content">
-      <h1>Word Statistics</h1>
+      <h1>Statisztika</h1>
 
       <div class="stats-summary" id="summary">
-        <h2>Summary</h2>
-        <p>Total Words: <span id="totalWords">0</span></p>
-        <p>Average Confidence: <span id="avgConfidence">0</span></p>
-        <p>Words with Positive Confidence: <span id="positiveWords">0</span></p>
-        <p>Words with Negative Confidence: <span id="negativeWords">0</span></p>
+        <h2>Összegzés</h2>
+        <p>Összes szó: <span id="totalWords">0</span></p>
+        <p>Átlagos magabiztosság: <span id="avgConfidence">0</span></p>
+        <p>Ismert szavak: <span id="positiveWords">0</span></p>
+        <p>Gyakorlásra szoruló szavak: <span id="negativeWords">0</span></p>
       </div>
 
       <table class="stats-table">
         <thead>
           <tr>
+            <th>Szó <button class="sort-button" data-sort="word">↕</button></th>
             <th>
-              Word <button class="sort-button" data-sort="word">↕</button>
-            </th>
-            <th>
-              Translation
+              Fordítás
               <button class="sort-button" data-sort="translation">↕</button>
             </th>
             <th>
-              Pass <button class="sort-button" data-sort="pass">↕</button>
+              Siker <button class="sort-button" data-sort="pass">↕</button>
             </th>
             <th>
-              Pass with Help
+              Siker Segítséggel
               <button class="sort-button" data-sort="passWithHelp">↕</button>
             </th>
             <th>
-              Fail <button class="sort-button" data-sort="fail">↕</button>
+              Sikertelen <button class="sort-button" data-sort="fail">↕</button>
             </th>
             <th>
-              Fail with Help
+              Sikertelen Segítséggel
               <button class="sort-button" data-sort="failWithHelp">↕</button>
             </th>
             <th>
-              Confidence Index
+              Magabiztosság
               <button class="sort-button" data-sort="confidenceIndex">↕</button>
             </th>
           </tr>
@@ -230,5 +255,6 @@
       // Load statistics when the page loads
       document.addEventListener("DOMContentLoaded", loadStatistics);
     </script>
+    <script src="../static/js/themeChange.js"></script>
   </body>
 </html>
