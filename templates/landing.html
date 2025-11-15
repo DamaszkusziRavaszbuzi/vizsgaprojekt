@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Üdv!</title>
     <link rel="stylesheet" href="../static/styles/global.css" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/responsive.css') }}">
 <script src="../static/js/styleLoader.js"></script>
     <link
       id="themeStylesheet"
@@ -49,24 +51,7 @@
   </head>
   <body>
     <div class="container">
-      <!-- Placeholder Text Section -->
-      <section class="placeholder-section">
-        <div class="placeholder-text">
-          <p>
-            Felhasználóink eddig <b>{PLACEHOLDER}</b> darab szókártyát hoztak
-            létre.
-          </p>
-          <p>
-            Ez <b>{PLACEHOLDER}</b> m<sup>2</sup>, azaz
-            <b>{PLACEHOLDER}</b> gramm papírt jelent, aminek az előállításához
-          </p>
-          <p><b>{PLACEHOLDER}</b> fa</p>
-          <p><b>{PLACEHOLDER}</b> kWh energia</p>
-          <span>és</span>
-          <p><b>{PLACEHOLDER}</b> hl víz</p>
-          <p>kellett volna.</p>
-        </div>
-      </section>
+
 
       <!-- Auth Forms Section -->
       <section class="auth-section">
@@ -93,7 +78,12 @@
             <button type="submit" class="highlightOnHoverButton">
               Bejelentkezés
             </button>
+            <br>
+            <br>
+            <br>
+            
           </form>
+          <a href="{{url_for('xd')}}">Elfelejtetted a jelszavad?</a>
         </div>
         <!-- Register Form -->
         <div class="form-container">
@@ -114,6 +104,7 @@
             <button type="submit" class="highlightOnHoverButton">
               Regisztráció
             </button>
+            
           </form>
         </div>
       </section>

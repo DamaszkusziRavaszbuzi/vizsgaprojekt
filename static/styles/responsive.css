@@ -1,0 +1,216 @@
+/* Base / Reset */
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial;
+  line-height: 1.4;
+  color: #222;
+}
+img,
+video,
+svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Page container */
+.container {
+  width: 100%;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Centered max width for larger screens */
+@media (min-width: 900px) {
+  .container {
+    max-width: 1100px;
+  }
+
+  /* create more breathing room on large screens */
+}
+
+/* Flexible rows/columns (simple grid) */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.col {
+  flex: 1 1 0%;
+  min-width: 0;
+}
+
+/* Utility columns: allow explicit column widths like col-50, col-33 */
+.col-50 {
+  flex: 1 1 50%;
+}
+.col-33 {
+  flex: 1 1 33.3333%;
+}
+.col-25 {
+  flex: 1 1 25%;
+}
+
+/* Cards and card grids */
+.cards,
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* Forms & inputs */
+form input[type="text"],
+form input[type="search"],
+form input[type="email"],
+form textarea,
+select {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 6px;
+  background: #fff;
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Buttons */
+button,
+.btn {
+  display: inline-block;
+  padding: 0.6rem 0.9rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: #1976d2;
+  color: white;
+  font-weight: 600;
+}
+button.fullwidth,
+.btn.fullwidth {
+  width: 100%;
+}
+
+/* Navigation: stack on small screens */
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+.navbar .nav-links {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+@media (max-width: 768px) {
+  .navbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .navbar .nav-links {
+    justify-content: space-between;
+    width: 100%;
+  }
+}
+
+/* Tables: enable horizontal scroll on small screens */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+th,
+td {
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* Images inside cards or article blocks */
+.hero,
+.thumb {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+/* Tiny screens adjustments */
+@media (max-width: 480px) {
+  :root {
+    font-size: 15px;
+  }
+  .cards,
+  .card-grid {
+    gap: 0.6rem;
+    grid-template-columns: 1fr;
+  }
+  .row {
+    gap: 0.6rem;
+  }
+  header h1 {
+    font-size: 1.1rem;
+    margin: 0;
+  }
+  .card {
+    padding: 0.8rem;
+    border-radius: 6px;
+  }
+  .navbar .nav-links {
+    gap: 0.4rem;
+  }
+}
+
+/* Accessibility: focus outlines */
+:focus {
+  outline: 3px solid rgba(25, 118, 210, 0.18);
+  outline-offset: 2px;
+}
+
+/* Helpers */
+.hide-mobile {
+  display: none;
+}
+@media (min-width: 769px) {
+  .hide-desktop {
+    display: none;
+  }
+  .hide-mobile {
+    display: inline-block;
+  }
+}
+
+/* Small tweak: make long text wrap inside cards */
+.card p,
+.card h3 {
+  word-break: break-word;
+}
+
+/* End of responsive.css */

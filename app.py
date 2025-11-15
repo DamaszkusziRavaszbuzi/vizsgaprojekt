@@ -40,7 +40,8 @@ def init_db():
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL,
-            password TEXT NOT NULL
+            password TEXT NOT NULL,
+            theme TEXT DEFAULT 'themeDark'
         );
     ''')
 
@@ -99,6 +100,9 @@ def pong():
     return redirect('/ping', code=302)
 
 
+
+
+
 @app.route('/login')
 def routeToLogin():
     return render_template('landing.html')
@@ -140,6 +144,14 @@ def routeToCards():
         return redirect('/login')  # Redirect to login if not logged in
     return render_template('cards2.html')
 
+@app.route('/forgotPassword')
+def xd():
+    return render_template('xd.html')
+
+@app.route('/makeCoffee')
+def coffe():
+    return render_template('coffee.html', code=418)
+
 
 
 #========= APIs ==========
@@ -172,7 +184,6 @@ def register():
 
 @app.route('/login', methods=['POST'])
 def login():
-    """Endpoint to login a user."""
     username = request.form.get('username')
     password = request.form.get('password')
 
@@ -182,12 +193,16 @@ def login():
     user = cursor.fetchone()
     conn.close()
 
-    if user and (user[2] == password):  # user[2] is the password
-        # Store userID in session
-        session['userID'] = user[0]  # user[0] is the user ID
+    if user and (user[2] == password):
+        session['userID'] = user[0]
+        # user schema: (id, username, password, [theme]) -- theme at index 3 if added
+        # if theme column exists:
+        if len(user) > 3 and user[3]:
+            session['theme'] = user[3]
+        else:
+            session['theme'] = 'themeDark'
         return redirect('/home')
     else:
-        # Render the login page again with an error message
         error_msg = "Hibás felhasználónév vagy jelszó!"
         return render_template('landing.html', login_error=error_msg)
 
@@ -531,10 +546,227 @@ def recommend_smart_word():
         "word": best_entry["english"],
         "translation": best_entry["hungarian"]
     })
+
+@app.route('/edit')
+def routeToEdit():
+    if 'userID' not in session:  # Check if the user is logged in
+        return redirect('/login')  # Redirect to login if not logged in
+    return render_template('edit.html')
+
+@app.route('/get_user_words', methods=['GET'])
+def get_user_words():
+    """Get all words for the current user."""
+    if 'userID' not in session:
+        return jsonify({"status": "error", "message": "User not logged in!"}), 400
+
+    user_id = session['userID']
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, word, translation FROM words WHERE userID = ? ORDER BY word', (user_id,))
+    words = cursor.fetchall()
+    conn.close()
+
+    return jsonify({
+        "status": "success",
+        "words": [{"id": w[0], "word": w[1], "translation": w[2]} for w in words]
+    })
+
+@app.route('/delete_word', methods=['POST'])
+def delete_word():
+    """Delete a word from the database."""
+    if 'userID' not in session:
+        return jsonify({"status": "error", "message": "User not logged in!"}), 400
+
+    user_id = session['userID']
+    word_id = request.json.get('word_id')
+    
+    if not word_id:
+        return jsonify({"status": "error", "message": "Missing word_id!"}), 400
+
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM words WHERE id = ? AND userID = ?', (word_id, user_id))
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "success", "message": "Word deleted successfully!"})
+
+@app.route('/update_word', methods=['POST'])
+def update_word():
+    """Update a word in the database."""
+    if 'userID' not in session:
+        return jsonify({"status": "error", "message": "User not logged in!"}), 400
+
+    user_id = session['userID']
+    word_id = request.json.get('word_id')
+    new_word = request.json.get('word')
+    new_translation = request.json.get('translation')
+    
+    if not all([word_id, new_word, new_translation]):
+        return jsonify({"status": "error", "message": "Missing required fields!"}), 400
+
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('''
+        UPDATE words 
+        SET word = ?, translation = ? 
+        WHERE id = ? AND userID = ?
+    ''', (new_word, new_translation, word_id, user_id))
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "success", "message": "Word updated successfully!"})
+
+@app.route('/statistics')
+def routeToStatistics():
+    if 'userID' not in session:
+        return redirect('/login')
+    return render_template('statistics.html')
+
+@app.route('/get_word_statistics', methods=['GET'])
+def get_word_statistics():
+    """Get all words with their statistics for the current user."""
+    if 'userID' not in session:
+        return jsonify({"status": "error", "message": "User not logged in!"}), 400
+
+    user_id = session['userID']
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT id, word, translation, pass, passWithHelp, fail, failWithHelp 
+        FROM words 
+        WHERE userID = ? 
+        ORDER BY word
+    ''', (user_id,))
+    words = cursor.fetchall()
+    conn.close()
+
+    word_stats = []
+    for w in words:
+        confidence_index = (w[3] * 2) + w[4] - w[5] - (w[6] * 2)
+        word_stats.append({
+            "id": w[0],
+            "word": w[1],
+            "translation": w[2],
+            "pass": w[3],
+            "passWithHelp": w[4],
+            "fail": w[5],
+            "failWithHelp": w[6],
+            "confidenceIndex": confidence_index
+        })
+
+    return jsonify({
+        "status": "success",
+        "words": word_stats
+    })
+
+# Add the following routes somewhere after your existing routes (e.g., near the other page routes)
+
+@app.route('/settings')
+def routeToSettings():
+    if 'userID' not in session:  # require login
+        return redirect('/login')
+    return render_template('settings.html')
+
+@app.route('/get_user_info', methods=['GET'])
+def get_user_info():
+    """Return the current user's username (for pre-filling the settings form)."""
+    if 'userID' not in session:
+        return jsonify({"status": "error", "message": "User not logged in!"}), 400
+
+    user_id = session['userID']
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, username FROM users WHERE id = ?', (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return jsonify({"status": "error", "message": "User not found!"}), 404
+
+    return jsonify({"status": "success", "user": {"id": row[0], "username": row[1]}})
+
+@app.route('/update_user', methods=['POST'])
+def update_user():
+    """Update the current user's username and/or password. userID remains unchanged."""
+    if 'userID' not in session:
+        return jsonify({"status": "error", "message": "User not logged in!"}), 400
+
+    user_id = session['userID']
+    data = request.get_json() or {}
+    new_username = data.get('username', '').strip()
+    new_password = data.get('password', '').strip()
+
+    if not new_username and not new_password:
+        return jsonify({"status": "error", "message": "Nothing to update!"}), 400
+
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+
+    # If username is changing, ensure it's not used by another user
+    if new_username:
+        cursor.execute('SELECT id FROM users WHERE username = ?', (new_username,))
+        existing = cursor.fetchone()
+        if existing and existing[0] != user_id:
+            conn.close()
+            return jsonify({"status": "error", "message": "Username already taken!"}), 400
+
+    # Build update query dynamically
+    updates = []
+    params = []
+    if new_username:
+        updates.append('username = ?')
+        params.append(new_username)
+    if new_password:
+        updates.append('password = ?')
+        params.append(new_password)  # Note: your app stores plain passwords currently; adapt to hashing if desired
+
+    if updates:
+        params.append(user_id)
+        query = f'UPDATE users SET {", ".join(updates)} WHERE id = ?'
+        cursor.execute(query, tuple(params))
+        conn.commit()
+
+    conn.close()
+    return jsonify({"status": "success", "message": "User updated successfully!"}), 200
+
+# --- Add / modify in your existing Flask app ---
+
+# 1) When user logs in, read user's theme and set it in session
+
+
+# 2) Inject theme into templates so you can use {{ theme }} in <link>
+@app.context_processor
+def inject_theme():
+    # priority: session -> default
+    theme = session.get('theme', 'themeDark')
+    return dict(theme=theme)
+
+# 3) Endpoint to set theme (updates DB if logged in, always stores to session)
+@app.route('/set_theme', methods=['POST'])
+def set_theme():
+    data = request.get_json() or {}
+    theme = data.get('theme')
+    if not theme:
+        return jsonify({"status": "error", "message": "Missing theme"}), 400
+
+    # Save to session
+    session['theme'] = theme
+
+    # If user logged in, persist to DB
+    if 'userID' in session:
+        user_id = session['userID']
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        # Safe update even if column didn't exist; if you added column this will work
+        cursor.execute('UPDATE users SET theme = ? WHERE id = ?', (theme, user_id))
+        conn.commit()
+        conn.close()
+
+    return jsonify({"status": "success", "message": "Theme set", "theme": theme}), 200
 #==========================
 #           Run
 #==========================
 
 if __name__ == '__main__':
     init_db()  # Initialize the database with the tables
-    app.run(debug=True)
+    app.run(host='0.0.0.0', debug=True)
