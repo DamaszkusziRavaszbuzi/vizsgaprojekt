@@ -28,7 +28,7 @@ function loadWords() {
 }
 
 function deleteWord(wordId) {
-  if (confirm("Are you sure you want to delete this word?")) {
+  if (confirm("Biztosan törölni szeretnéd ezt a szót?")) {
     fetch("/delete_word", {
       method: "POST",
       headers: {

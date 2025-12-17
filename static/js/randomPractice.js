@@ -111,7 +111,7 @@ function loadRandomWord() {
       .then((response) => response.json())
       .then((data) => {
         if (data.status === "error") {
-          wordDisplay.innerText = data.message || "No words!";
+          wordDisplay.innerText = data.message || "Nincs több szó!";
           inputField.placeholder = "";
           setInputState(false);
           return;
@@ -132,7 +132,7 @@ function loadRandomWord() {
         }
       })
       .catch((error) => {
-        wordDisplay.innerText = "Error fetching word!";
+        wordDisplay.innerText = "Hiba a szó betöltésekor!";
         setInputState(false);
         console.error("Error fetching word:", error);
       });
@@ -158,9 +158,7 @@ document.querySelector("#Switch").addEventListener("click", function () {
       inputField.value = "";
       clearFeedback();
     })
-    .catch((error) =>
-      console.error("Error switching translation direction:", error)
-    );
+    .catch((error) => console.error("Hiba", error));
 });
 
 // Check button logic

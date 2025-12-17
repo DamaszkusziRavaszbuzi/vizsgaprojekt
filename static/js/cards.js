@@ -63,16 +63,16 @@ async function createCard() {
   if (uniqueWords.size >= wordLimit) {
     // No more unique words, disable button
     addCardBtn.disabled = true;
-    addCardBtn.innerText = "No more cards";
+    addCardBtn.innerText = "Nincs több kártya";
     return;
   }
 
   const unique = await getUniqueWord();
   if (!unique) {
     // Could not find a unique word after several tries
-    alert("No more unique words available!");
+    alert("Nincs több egyedi szó.");
     addCardBtn.disabled = true;
-    addCardBtn.innerText = "No more cards";
+    addCardBtn.innerText = "Nincs több kártya";
     return;
   }
   const { word, translation } = unique;
