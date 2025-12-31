@@ -1,12 +1,15 @@
 const cardsArea = document.getElementById("cardsArea");
 const addCardBtn = document.getElementById("addCardBtn");
+const deleteBtn = document.getElementById("deleteBtn");
 
 let cardCount = 0;
 const CARD_WIDTH = 260;
-const CARD_HEIGHT = 360;
+const CARD_HEIGHT = 200;
 
 let uniqueWords = new Set();
 let wordLimit = Infinity; // Will be set after fetching
+
+const originalAddCardText = addCardBtn ? addCardBtn.innerText : "Új kártya";
 
 // Fetch total available unique word count from backend
 function fetchWordLimit() {
@@ -59,6 +62,13 @@ async function getUniqueWord(maxAttempts = 10) {
   return null;
 }
 
+function isPointOverDelete(x, y) {
+  if (!deleteBtn) return false;
+  const el = document.elementFromPoint(x, y);
+  if (!el) return false;
+  return el === deleteBtn || deleteBtn.contains(el);
+}
+
 async function createCard() {
   if (uniqueWords.size >= wordLimit) {
     // No more unique words, disable button
@@ -85,6 +95,7 @@ async function createCard() {
   cardContainer.className = "card-container";
   cardContainer.style.left = `${left}px`;
   cardContainer.style.top = `${top}px`;
+  cardContainer.dataset.word = word;
 
   const card = document.createElement("div");
   card.className = "card";
@@ -99,6 +110,7 @@ async function createCard() {
   let isDragging = false;
   let dragStart = null;
   let dragOffset = { x: 0, y: 0 };
+  let lastOverDelete = false;
 
   cardContainer.addEventListener("mousedown", (e) => {
     isDragging = false;
@@ -135,14 +147,47 @@ async function createCard() {
         );
         cardContainer.style.left = newLeft + "px";
         cardContainer.style.top = newTop + "px";
+
+        // check whether cursor is over delete button
+        const overDelete = isPointOverDelete(e2.clientX, e2.clientY);
+        if (overDelete && !lastOverDelete) {
+          lastOverDelete = true;
+          if (deleteBtn) deleteBtn.classList.add("delete-hover");
+        } else if (!overDelete && lastOverDelete) {
+          lastOverDelete = false;
+          if (deleteBtn) deleteBtn.classList.remove("delete-hover");
+        }
       }
     }
     function onMouseUp(e2) {
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("mouseup", onMouseUp);
-      if (!isDragging) {
-        card.classList.toggle("flipped");
+
+      // If dragging and released over delete button -> delete the card
+      if (isDragging && isPointOverDelete(e2.clientX, e2.clientY)) {
+        // remove from DOM
+        cardContainer.remove();
+
+        // remove word from set so it can be used again
+        const removedWord = cardContainer.dataset.word;
+        if (removedWord) {
+          uniqueWords.delete(removedWord);
+        }
+
+        // If add button was disabled due to reaching limit, re-enable (if now below limit)
+        if (addCardBtn.disabled && uniqueWords.size < wordLimit) {
+          addCardBtn.disabled = false;
+          addCardBtn.innerText = originalAddCardText;
+        }
+      } else {
+        // Not deleting: if it wasn't a real drag, toggle flip
+        if (!isDragging) {
+          card.classList.toggle("flipped");
+        }
       }
+
+      // cleanup delete hover visual
+      if (deleteBtn) deleteBtn.classList.remove("delete-hover");
     }
     document.addEventListener("mousemove", onMouseMove);
     document.addEventListener("mouseup", onMouseUp);
