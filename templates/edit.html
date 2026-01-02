@@ -19,7 +19,17 @@
       href="{{ url_for('static', filename='styles/responsive.css') }}" />
   </head>
   <body>
-    <div class="sidenav">
+    <!-- Topbar for mobile (menu button + title) -->
+    <header class="topbar" role="banner">
+      <button id="menuToggle" aria-label="Open menu" class="menu-btn">☰</button>
+      <h1 class="topbar-title">Szavak Szerkesztése</h1>
+    </header>
+
+    <!-- Overlay for mobile menu -->
+    <div id="overlay" class="overlay" aria-hidden="true"></div>
+
+    <!-- Sidenav; give it an id so menuToggle.js can find it -->
+    <div class="sidenav" id="sidenav">
       <a href="{{url_for('routeToIndex')}}">Főoldal</a>
       <a href="{{url_for('routeToEdit')}}">Szavak kezelése</a>
       <a href="{{url_for('routeToSettings')}}">Beálltások</a>
@@ -27,9 +37,12 @@
       <a href="{{url_for('logout')}}">Kijelentkezés</a>
     </div>
 
-    <div class="content">
-      <h1>Szavak Szerkesztése</h1>
-      <table class="word-table">
+    <main class="content" role="main" aria-labelledby="page-heading">
+      <!-- Keep heading in content for desktop while topbar shows for mobile -->
+      <h2 id="page-heading" class="sr-only">Szavak Szerkesztése</h2>
+
+      <table class="word-table" aria-describedby="words-desc">
+        <caption id="words-desc" class="sr-only">A felhasználó szavai és fordításaik</caption>
         <thead>
           <tr>
             <th>Szó</th>
@@ -41,8 +54,10 @@
           <!-- Words will be populated here -->
         </tbody>
       </table>
-    </div>
+    </main>
 
+    <!-- Scripts (menuToggle must be loaded after DOM elements are present) -->
+    <script src="../static/js/menuToggle.js"></script>
     <script src="../static/js/edit.js"></script>
     <script src="../static/js/themeChange.js"></script>
   </body>
