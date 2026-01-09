@@ -1,90 +1,73 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Settings</title>
-    <link rel="stylesheet" href="../static/styles/global.css" />
-    <script src="../static/js/styleLoader.js"></script>
-    <link
-      id="themeStylesheet"
-      rel="stylesheet"
-      href="{{ url_for('static', filename='styles/themes/' + (theme or 'themeDark') + '.css') }}" />
-    <link rel="stylesheet" href="../static/styles/components/settings.css" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='styles/responsive.css') }}" />
-  </head>
-  <body>
-    <!-- Topbar for mobile -->
-    <header class="topbar" role="banner">
-      <button id="menuToggle" aria-label="Open menu" class="menu-btn">☰</button>
-      <h1 class="topbar-title">Beállítások</h1>
-    </header>
+{% extends 'base.html' %} {% block title %}Beállítások{% endblock %} {% block
+head_extra %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='styles/components/settings.css') }}" />
+{% endblock %} {% block content %}
+<button
+  id="menuToggle"
+  class="menu-toggle"
+  aria-label="Open menu"
+  aria-expanded="false">
+  ☰
+</button>
+<div id="overlay" class="overlay" aria-hidden="true"></div>
+<main>
+  <div class="sidenav" id="sidenav" role="navigation" aria-label="Main menu">
+    <a href="{{url_for('routeToIndex')}}">Főoldal</a>
+    <a href="{{url_for('routeToEdit')}}">Szavak kezelése</a>
+    <a href="{{url_for('routeToSettings')}}">Beálltások</a>
+    <a href="{{url_for('routeToStatistics')}}">Statisztika</a>
+    <a href="{{url_for('logout')}}">Kijelentkezés</a>
+  </div>
 
-    <!-- Overlay for mobile menu -->
-    <div id="overlay" class="overlay" aria-hidden="true"></div>
+  <div class="content" role="main">
+    <h1>Beállítások</h1>
 
-    <div class="sidenav" id="sidenav">
-      <a href="{{url_for('routeToIndex')}}">Főoldal</a>
-      <a href="{{url_for('routeToEdit')}}">Szavak kezelése</a>
-      <a href="{{url_for('routeToSettings')}}">Beálltások</a>
-      <a href="{{url_for('routeToStatistics')}}">Statisztika</a>
-      <a href="{{url_for('logout')}}">Kijelentkezés</a>
+    <div class="panel" aria-labelledby="account-heading">
+      <h2 id="account-heading" class="title">Fiók</h2>
+      <label for="username">Felhasználónév</label>
+      <input
+        id="username"
+        class="inputFieldSmall"
+        type="text"
+        placeholder="A neved" />
+
+      <label for="password">Új jelszó</label>
+      <input
+        id="password"
+        class="inputFieldSmall"
+        type="password"
+        placeholder="Hagyd üresen a jelenlegi jelszó megtartásához" />
+
+      <div class="form-actions">
+        <button id="saveBtn" class="btn primary highlightOnHoverButton">
+          Mentés
+        </button>
+        <button id="logoutBtn" class="btn warn highlightOnHoverButton">
+          Kijelentkezés
+        </button>
+        <div id="msg" class="message"></div>
+      </div>
     </div>
 
-    <main class="content" role="main">
-      <h1>Beállítások</h1>
-
-      <div class="panel" aria-labelledby="account-heading">
-        <h2 id="account-heading" class="title">Fiók</h2>
-        <label for="username">Felhasználónév</label>
-        <input
-          id="username"
-          class="inputFieldSmall"
-          type="text"
-          placeholder="A neved" />
-
-        <label for="password">Új jelszó</label>
-        <input
-          id="password"
-          class="inputFieldSmall"
-          type="password"
-          placeholder="Hagyd üresen a jelenlegi jelszó megtartásához" />
-
-        <div class="form-actions">
-          <button id="saveBtn" class="btn primary highlightOnHoverButton">
-            Mentés
-          </button>
-          <button id="logoutBtn" class="btn warn highlightOnHoverButton">
-            Kijelentkezés
-          </button>
-          <div id="msg" class="message"></div>
-        </div>
+    <div class="panel">
+      <h2 class="title">Megjelenés</h2>
+      <p>Válassz témát</p>
+      <div class="theme-row">
+        <label for="themeSelect">Témák:</label>
+        <select id="themeSelect" class="inputFieldSmall">
+          <option value="themeDark">Sötét Narancs</option>
+          <option value="themeDarkGreen">Sötét Zöld</option>
+          <option value="themeDarkPurple">Sötét Lila</option>
+        </select>
+        <button id="applyThemeBtn" class="btn highlightOnHoverButton">
+          Mentés
+        </button>
       </div>
-
-      <div class="panel">
-        <h2 class="title">Megjelenés</h2>
-        <p>Válassz témát</p>
-        <div class="theme-row">
-          <label for="themeSelect">Témák:</label>
-          <select id="themeSelect" class="inputFieldSmall">
-            <option value="themeDark">Sötét Narancs</option>
-            <option value="themeDarkGreen">Sötét Zöld</option>
-            <option value="themeDarkPurple">Sötét Lila</option>
-          </select>
-          <button id="applyThemeBtn" class="btn highlightOnHoverButton">
-            Mentés
-          </button>
-        </div>
-      </div>
-    </main>
-
-    <script src="../static/js/menuToggle.js"></script>
-    <script src="../static/js/themeChange.js"></script>
-    <script src="../static/js/settings.js"></script>
-  </body>
-</html>
+    </div>
+  </div>
+</main>
+{% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+{% endblock %}

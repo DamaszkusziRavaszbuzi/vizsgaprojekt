@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}App{% endblock %}</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles/global.css') }}" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles/responsive.css') }}" />
+    <script src="{{ url_for('static', filename='js/styleLoader.js') }}"></script>
+    <link
+      id="themeStylesheet"
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles/themes/' + (theme or 'themeDark') + '.css') }}" />
+    {% block head_extra %}{% endblock %}
+  </head>
+  <body>
+    {% block top_ui %}{% endblock %} {% block content %}{% endblock %}
+    <script src="{{ url_for('static', filename='js/themeChange.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/menuToggle.js') }}"></script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

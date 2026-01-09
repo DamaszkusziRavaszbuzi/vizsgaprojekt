@@ -1,13 +1,11 @@
 let currentWord = "";
 let currentTranslation = "";
 
-// Helper to get URL param
 function getUrlParam(name) {
   return new URLSearchParams(window.location.search).get(name);
 }
 
 function fetchSuggestion() {
-  // Use smart recommendation if mode=suggested, else random
   const isSuggested = getUrlParam("mode") === "suggested";
   const endpoint = isSuggested ? "/recommend_smart_word" : "/recommend_word";
 

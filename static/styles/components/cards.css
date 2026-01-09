@@ -1,5 +1,4 @@
 :root {
-
   --card-radius: 12px;
 }
 
@@ -11,16 +10,13 @@ body {
   font-family: inherit;
 }
 
-#addCardBtn {
+.addCardBtn {
   position: fixed;
   top: 32px;
   left: 32px;
   z-index: 100;
   padding: 12px 26px;
   font-size: 1.2em;
-}
-
-#addCardBtn {
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -32,7 +28,6 @@ body {
   transform: translateY(2px);
 }
 
-/* Delete button (top-right) */
 #deleteBtn {
   position: fixed;
   top: 32px;
@@ -50,18 +45,17 @@ body {
   align-items: center;
   justify-content: center;
   user-select: none;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 #deleteBtn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.28);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
 }
 
-/* Visual state when a dragging card is over the delete area */
 #deleteBtn.delete-hover {
   background: #c0392b;
-  box-shadow: 0 8px 24px rgba(192,57,43,0.35);
+  box-shadow: 0 8px 24px rgba(192, 57, 43, 0.35);
   transform: scale(1.05);
   color: #fff;
 }
@@ -125,7 +119,6 @@ body {
     font-size: 1em;
   }
 
-  /* Move delete button a bit for smaller screens */
   #deleteBtn {
     top: 18px;
     right: 18px;

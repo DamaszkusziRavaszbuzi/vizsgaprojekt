@@ -4,6 +4,7 @@ function loadWords() {
     .then((data) => {
       if (data.status === "success") {
         const wordsList = document.getElementById("wordsList");
+        if (!wordsList) return;
         wordsList.innerHTML = "";
 
         data.words.forEach((word) => {
@@ -65,55 +66,57 @@ function updateWord(wordId, word, translation) {
     });
 }
 
-document.getElementById("wordsList").addEventListener("click", function (e) {
-  const row = e.target.closest(".word-row");
-  if (!row) return;
+document.addEventListener("DOMContentLoaded", function () {
+  const wordsList = document.getElementById("wordsList");
+  if (wordsList) {
+    wordsList.addEventListener("click", function (e) {
+      const row = e.target.closest(".word-row");
+      if (!row) return;
 
-  const wordId = row.getAttribute("data-word-id");
-  const wordCell = row.querySelector(".word-cell");
-  const translationCell = row.querySelector(".translation-cell");
-  const editButton = row.querySelector(".edit-button");
-  const deleteButton = row.querySelector(".delete-button");
-  const saveButton = row.querySelector(".save-button");
-  const cancelButton = row.querySelector(".cancel-button");
+      const wordId = row.getAttribute("data-word-id");
+      const wordCell = row.querySelector(".word-cell");
+      const translationCell = row.querySelector(".translation-cell");
+      const editButton = row.querySelector(".edit-button");
+      const deleteButton = row.querySelector(".delete-button");
+      const saveButton = row.querySelector(".save-button");
+      const cancelButton = row.querySelector(".cancel-button");
 
-  if (e.target.classList.contains("delete-button")) {
-    deleteWord(wordId);
-  } else if (e.target.classList.contains("edit-button")) {
-    // Store original values
-    const originalWord = wordCell.textContent;
-    const originalTranslation = translationCell.textContent;
+      if (e.target.classList.contains("delete-button")) {
+        deleteWord(wordId);
+      } else if (e.target.classList.contains("edit-button")) {
+        const originalWord = wordCell.textContent;
+        const originalTranslation = translationCell.textContent;
 
-    // Replace text with input fields
-    wordCell.innerHTML = `<input type="text" class="input-field" value="${originalWord}">`;
-    translationCell.innerHTML = `<input type="text" class="input-field" value="${originalTranslation}">`;
+        wordCell.innerHTML = `<input type="text" class="input-field" value="${originalWord}">`;
+        translationCell.innerHTML = `<input type="text" class="input-field" value="${originalTranslation}">`;
 
-    // Toggle buttons
-    editButton.style.display = "none";
-    deleteButton.style.display = "none";
-    saveButton.style.display = "inline";
-    cancelButton.style.display = "inline";
+        if (editButton) editButton.style.display = "none";
+        if (deleteButton) deleteButton.style.display = "none";
+        if (saveButton) saveButton.style.display = "inline";
+        if (cancelButton) cancelButton.style.display = "inline";
 
-    // Store original content for cancel
-    row.setAttribute("data-original-word", originalWord);
-    row.setAttribute("data-original-translation", originalTranslation);
-  } else if (e.target.classList.contains("save-button")) {
-    const newWord = row.querySelector(".word-cell input").value;
-    const newTranslation = row.querySelector(".translation-cell input").value;
+        row.setAttribute("data-original-word", originalWord);
+        row.setAttribute("data-original-translation", originalTranslation);
+      } else if (e.target.classList.contains("save-button")) {
+        const newWord = row.querySelector(".word-cell input").value;
+        const newTranslation = row.querySelector(
+          ".translation-cell input"
+        ).value;
 
-    updateWord(wordId, newWord, newTranslation);
-  } else if (e.target.classList.contains("cancel-button")) {
-    // Restore original content
-    wordCell.textContent = row.getAttribute("data-original-word");
-    translationCell.textContent = row.getAttribute("data-original-translation");
+        updateWord(wordId, newWord, newTranslation);
+      } else if (e.target.classList.contains("cancel-button")) {
+        wordCell.textContent = row.getAttribute("data-original-word");
+        translationCell.textContent = row.getAttribute(
+          "data-original-translation"
+        );
 
-    // Toggle buttons back
-    editButton.style.display = "inline";
-    deleteButton.style.display = "inline";
-    saveButton.style.display = "none";
-    cancelButton.style.display = "none";
+        if (editButton) editButton.style.display = "inline";
+        if (deleteButton) deleteButton.style.display = "inline";
+        if (saveButton) saveButton.style.display = "none";
+        if (cancelButton) cancelButton.style.display = "none";
+      }
+    });
+
+    loadWords();
   }
 });
-
-// Load words when the page loads
-document.addEventListener("DOMContentLoaded", loadWords);

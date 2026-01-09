@@ -1,19 +1,14 @@
-// Apply theme immediately (update the link href and store in localStorage).
 function applyThemeClient(themeName, persistToServer = true) {
-  // swap stylesheet href
   var link = document.getElementById("themeStylesheet");
   if (link) {
     link.href = "/static/styles/themes/" + themeName + ".css";
   }
-  // persist locally for unauthenticated users / immediate future visits
+
   try {
     localStorage.setItem("theme", themeName);
-  } catch (e) {
-    /* ignore */
-  }
+  } catch (e) {}
 
   if (persistToServer) {
-    // notify backend to persist to session and DB (if logged-in)
     fetch("/set_theme", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -29,7 +24,6 @@ function applyThemeClient(themeName, persistToServer = true) {
   }
 }
 
-// Example: hook up theme select on the settings page
 document.addEventListener("DOMContentLoaded", function () {
   var select = document.getElementById("themeSelect");
   if (!select) return;

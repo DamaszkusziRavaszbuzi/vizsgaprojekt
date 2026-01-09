@@ -23,7 +23,6 @@ a {
   text-decoration: none;
 }
 
-/* a gecis kurva életbe má a faszé nem működik ez a szar */
 .buttonList {
   margin-left: auto;
   margin-right: auto;
@@ -85,32 +84,6 @@ a {
   align-content: center;
   align-items: center;
 }
-
-/* .kinetic-button {
-  background-color: #3498db; 
-  color: white;
-  padding: 12px 24px;
-  font-size: 16px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-
-  box-shadow: 0 6px #2c80b4; 
-  transition: all 0.15s ease-in-out; 
-  transform: translateY(0);
-  position: relative;
-}
-
-.kinetic-button:hover {
-  box-shadow: 0 10px #2c80b4; 
-  transform: translateY(-4px); 
-}
-
-.kinetic-button:active {
-  box-shadow: 0 2px #2c80b4; 
-  transform: translateY(2px); 
-
-*/
 
 .highlightOnHoverButton {
   transition: all 0.1s ease-in-out;

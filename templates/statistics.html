@@ -1,76 +1,67 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Word Statistics</title>
-    <link rel="stylesheet" href="../static/styles/global.css" />
-    <script src="../static/js/styleLoader.js"></script>
-    <link
-      id="themeStylesheet"
-      rel="stylesheet"
-      href="{{ url_for('static', filename='styles/themes/' + (theme or 'themeDark') + '.css') }}" />
-    <link rel="stylesheet" href="../static/styles/components/statistics.css" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='styles/responsive.css') }}" />
-  </head>
-  <body>
-    <div class="sidenav">
-      <a href="{{url_for('routeToIndex')}}">Főoldal</a>
-      <a href="{{url_for('routeToEdit')}}">Szavak kezelése</a>
-      <a href="{{url_for('routeToSettings')}}">Beálltások</a>
-      <a href="{{url_for('routeToStatistics')}}">Statisztika</a>
-      <a href="{{url_for('logout')}}">Kijelentkezés</a>
+{% extends 'base.html' %} {% block title %}Statisztika{% endblock %} {% block
+head_extra %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='styles/components/statistics.css') }}" />
+{% endblock %} {% block content %}
+<button
+  id="menuToggle"
+  class="menu-toggle"
+  aria-label="Open menu"
+  aria-expanded="false">
+  ☰
+</button>
+<div id="overlay" class="overlay" aria-hidden="true"></div>
+<main>
+  <div class="sidenav" id="sidenav" role="navigation" aria-label="Main menu">
+    <a href="{{url_for('routeToIndex')}}">Főoldal</a>
+    <a href="{{url_for('routeToEdit')}}">Szavak kezelése</a>
+    <a href="{{url_for('routeToSettings')}}">Beálltások</a>
+    <a href="{{url_for('routeToStatistics')}}">Statisztika</a>
+    <a href="{{url_for('logout')}}">Kijelentkezés</a>
+  </div>
+
+  <div class="content">
+    <h1>Statisztika</h1>
+
+    <div class="stats-summary" id="summary">
+      <h2>Összegzés</h2>
+      <p>Összes szó: <span id="totalWords">0</span></p>
+      <p>Átlagos magabiztosság: <span id="avgConfidence">0</span></p>
+      <p>Ismert szavak: <span id="positiveWords">0</span></p>
+      <p>Gyakorlásra szoruló szavak: <span id="negativeWords">0</span></p>
     </div>
 
-    <div class="content">
-      <h1>Statisztika</h1>
-
-      <div class="stats-summary" id="summary">
-        <h2>Összegzés</h2>
-        <p>Összes szó: <span id="totalWords">0</span></p>
-        <p>Átlagos magabiztosság: <span id="avgConfidence">0</span></p>
-        <p>Ismert szavak: <span id="positiveWords">0</span></p>
-        <p>Gyakorlásra szoruló szavak: <span id="negativeWords">0</span></p>
-      </div>
-
-      <table class="stats-table">
-        <thead>
-          <tr>
-            <th>Szó <button class="sort-button" data-sort="word">↕</button></th>
-            <th>
-              Fordítás
-              <button class="sort-button" data-sort="translation">↕</button>
-            </th>
-            <th>
-              Siker <button class="sort-button" data-sort="pass">↕</button>
-            </th>
-            <th>
-              Siker Segítséggel
-              <button class="sort-button" data-sort="passWithHelp">↕</button>
-            </th>
-            <th>
-              Sikertelen <button class="sort-button" data-sort="fail">↕</button>
-            </th>
-            <th>
-              Sikertelen Segítséggel
-              <button class="sort-button" data-sort="failWithHelp">↕</button>
-            </th>
-            <th>
-              Magabiztosság
-              <button class="sort-button" data-sort="confidenceIndex">↕</button>
-            </th>
-          </tr>
-        </thead>
-        <tbody id="statsBody"></tbody>
-      </table>
-    </div>
-
-    <script src="../static/js/themeChange.js"></script>
-    <script src="../static/js/statistics.js"></script>
-  </body>
-</html>
+    <table class="stats-table">
+      <thead>
+        <tr>
+          <th>Szó <button class="sort-button" data-sort="word">↕</button></th>
+          <th>
+            Fordítás
+            <button class="sort-button" data-sort="translation">↕</button>
+          </th>
+          <th>Siker <button class="sort-button" data-sort="pass">↕</button></th>
+          <th>
+            Siker Segítséggel
+            <button class="sort-button" data-sort="passWithHelp">↕</button>
+          </th>
+          <th>
+            Sikertelen <button class="sort-button" data-sort="fail">↕</button>
+          </th>
+          <th>
+            Sikertelen Segítséggel
+            <button class="sort-button" data-sort="failWithHelp">↕</button>
+          </th>
+          <th>
+            Magabiztosság
+            <button class="sort-button" data-sort="confidenceIndex">↕</button>
+          </th>
+        </tr>
+      </thead>
+      <tbody id="statsBody"></tbody>
+    </table>
+  </div>
+</main>
+{% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='js/statistics.js') }}"></script>
+{% endblock %}

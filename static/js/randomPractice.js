@@ -1,10 +1,9 @@
 let currentWord;
 let currentTranslation;
 let wordID;
-let translationDirection = true; // true = word -> translation, false = translation -> word
-let helpUsed = false; // Track if help was used
+let translationDirection = true;
+let helpUsed = false;
 
-// Learning mode logic
 let learningMode = false;
 let learningWordIDs = [];
 let usedLearningWordIDs = [];
@@ -38,7 +37,6 @@ if (getUrlParam("mode") === "learning") {
 
 function pickNextLearningWord() {
   if (learningWordIDs.length === 0) {
-    // Fetch new learning list
     fetch("/get_learning_words")
       .then((r) => r.json())
       .then((data) => {
@@ -57,19 +55,18 @@ function pickNextLearningWord() {
       });
     return;
   }
-  // Pick a random id from the list not yet used
+
   let available = learningWordIDs.filter(
     (id) => !usedLearningWordIDs.includes(id)
   );
   if (available.length === 0) {
-    // All used, reset
     usedLearningWordIDs = [];
     available = learningWordIDs.slice();
   }
   const idx = Math.floor(Math.random() * available.length);
   const wordIDToUse = available[idx];
   usedLearningWordIDs.push(wordIDToUse);
-  // Fetch word by id
+
   fetch("/get_word_by_id", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -100,10 +97,9 @@ function pickNextLearningWord() {
     });
 }
 
-// Replace loadRandomWord with new logic:
 function loadRandomWord() {
   setInputState(false);
-  helpUsed = false; // Reset flag on new word
+  helpUsed = false;
   if (learningMode) {
     pickNextLearningWord();
   } else {
@@ -139,10 +135,8 @@ function loadRandomWord() {
   }
 }
 
-// On page load
 window.onload = loadRandomWord;
 
-// Switch button logic
 document.querySelector("#Switch").addEventListener("click", function () {
   fetch("/switch_translation", { method: "POST" })
     .then((response) => response.json())
@@ -161,14 +155,12 @@ document.querySelector("#Switch").addEventListener("click", function () {
     .catch((error) => console.error("Hiba", error));
 });
 
-// Check button logic
 document.querySelector("#Check").addEventListener("click", function () {
   setInputState(false);
   const userInput = inputField.value.trim();
   const correctAnswer = translationDirection ? currentTranslation : currentWord;
   const isCorrect = userInput === correctAnswer;
 
-  // Figure out status string
   let status;
   if (isCorrect) {
     status = helpUsed ? "passWithHelp" : "pass";
@@ -176,7 +168,6 @@ document.querySelector("#Check").addEventListener("click", function () {
     status = helpUsed ? "failWithHelp" : "fail";
   }
 
-  // Update the score based on whether the answer is correct and if help was used
   fetch("/update_score", {
     method: "POST",
     headers: {
@@ -207,12 +198,10 @@ document.querySelector("#Check").addEventListener("click", function () {
     });
 });
 
-// Give up button logic
 document.querySelector("#GiveUp").addEventListener("click", function () {
   setInputState(false);
   const correctAnswer = translationDirection ? currentTranslation : currentWord;
 
-  // If helpUsed is true, send failWithHelp, else fail
   const status = helpUsed ? "failWithHelp" : "fail";
 
   fetch("/update_score", {
@@ -242,7 +231,6 @@ document.querySelector("#GiveUp").addEventListener("click", function () {
     });
 });
 
-// Helper: show/hide modal
 function showHelpModal() {
   document.getElementById("helpModal").style.display = "flex";
   document.getElementById("helpChoices").innerHTML = "";
@@ -252,18 +240,15 @@ function hideHelpModal() {
   document.getElementById("helpChoices").innerHTML = "";
 }
 
-// Help button logic
 document.querySelector("#Help").addEventListener("click", function () {
   showHelpModal();
 });
 
-// Cancel button in modal
 document.getElementById("helpCancel").onclick = hideHelpModal;
 
-// Multiple Choice button
 document.getElementById("helpMultipleChoice").onclick = function () {
-  helpUsed = true; // Mark that help was used
-  // Fetch choices from backend
+  helpUsed = true;
+
   fetch("/get_choices", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -279,7 +264,7 @@ document.getElementById("helpMultipleChoice").onclick = function () {
           "Nem sikerült a válaszlehetőségek betöltése!";
         return;
       }
-      // Display as buttons
+
       const helpChoicesDiv = document.getElementById("helpChoices");
       helpChoicesDiv.innerHTML = "<p>Válaszd ki a helyes választ:</p>";
       data.choices.forEach((choice) => {
@@ -300,12 +285,11 @@ document.getElementById("helpMultipleChoice").onclick = function () {
     });
 };
 
-// Show Vowels button
 document.getElementById("helpShowVowels").onclick = function () {
-  helpUsed = true; // Mark that help was used
-  // Get the correct answer
+  helpUsed = true;
+
   const answer = translationDirection ? currentTranslation : currentWord;
-  // Extract vowels (Hungarian and English)
+
   const vowels = answer.match(/[aeiouáéíóöőúüűAEIOUÁÉÍÓÖŐÚÜŰ]/g);
   const vowelString = vowels ? vowels.join("") : "";
   inputField.placeholder = `Magánhangzók: ${vowelString}`;

@@ -1,116 +1,57 @@
-<!DOCTYPE html>
-<html lang="hu">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Üdv!</title>
-    <link rel="stylesheet" href="../static/styles/global.css" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles/responsive.css') }}">
-<script src="../static/js/styleLoader.js"></script>
-    <link
-      id="themeStylesheet"
-      rel="stylesheet"
-      href="{{ url_for('static', filename='styles/themes/' + (theme or 'themeDark') + '.css') }}" />
-
-    <script>
-      (function () {
-        try {
-          var stored = localStorage.getItem("theme");
-          if (stored) {
-            window.__preferredTheme = stored;
-          } else {
-            window.__preferredTheme = null;
-          }
-        } catch (e) {
-          window.__preferredTheme = null;
-        }
-      })();
-    </script>
-
-    <link
-      id="themeStylesheet"
-      rel="stylesheet"
-      href="{{ url_for('static', filename='styles/themes/' + (theme or 'themeDark') + '.css') }}" />
-
-    <script>
-      (function () {
-        try {
-          var preferred = window.__preferredTheme;
-          if (preferred) {
-            var link = document.getElementById("themeStylesheet");
-            if (link) {
-              link.href = "/static/styles/themes/" + preferred + ".css";
-            }
-          }
-        } catch (e) {}
-      })();
-    </script>
-
-    <link rel="stylesheet" href="../static/styles/components/landing.css" />
-  </head>
-  <body>
-    <div class="container">
-
-
-      <!-- Auth Forms Section -->
-      <section class="auth-section">
-        <!-- Login Form -->
-        <div class="form-container">
-          <div class="title">Bejelentkezés</div>
-          {% if login_error %}
-          <div class="error-message">{{ login_error }}</div>
-          {% endif %}
-          <form action="/login" method="POST">
-            <input
-              type="text"
-              name="username"
-              placeholder="Add meg a felhasználóneved"
-              class="inputField"
-              required />
-            <input
-              type="password"
-              name="password"
-              placeholder="Add meg a jelszavad"
-              class="inputField"
-              required />
-
-            <button type="submit" class="highlightOnHoverButton">
-              Bejelentkezés
-            </button>
-            <br>
-            <br>
-            <br>
-            
-          </form>
-          <a href="{{url_for('xd')}}">Elfelejtetted a jelszavad?</a>
-        </div>
-        <!-- Register Form -->
-        <div class="form-container">
-          <div class="title">Regisztráció</div>
-          <form action="/register" method="POST">
-            <input
-              type="text"
-              name="username"
-              placeholder="Válassz felhasználónevet"
-              class="inputField"
-              required />
-            <input
-              type="password"
-              name="password"
-              placeholder="Adj meg egy jelszót"
-              class="inputField"
-              required />
-            <button type="submit" class="highlightOnHoverButton">
-              Regisztráció
-            </button>
-            
-          </form>
-        </div>
-      </section>
+{% extends 'base.html' %} {% block title %}Üdv!{% endblock %} {% block
+head_extra %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='styles/components/landing.css') }}" />
+{% endblock %} {% block content %}
+<div class="container">
+  <section class="auth-section">
+    <div class="form-container">
+      <div class="title">Bejelentkezés</div>
+      {% if login_error %}
+      <div class="error-message">{{ login_error }}</div>
+      {% endif %}
+      <form action="/login" method="POST">
+        <input
+          type="text"
+          name="username"
+          placeholder="Add meg a felhasználóneved"
+          class="inputField"
+          required />
+        <input
+          type="password"
+          name="password"
+          placeholder="Add meg a jelszavad"
+          class="inputField"
+          required />
+        <button type="submit" class="highlightOnHoverButton">
+          Bejelentkezés
+        </button>
+      </form>
+      <a href="{{url_for('xd')}}">Elfelejtetted a jelszavad?</a>
     </div>
-  </body>
-
-    <script src="../static/js/themeChange.js"></script>
-  </body>
-</html>
+    <div class="form-container">
+      <div class="title">Regisztráció</div>
+      <form action="/register" method="POST">
+        <input
+          type="text"
+          name="username"
+          placeholder="Válassz felhasználónevet"
+          class="inputField"
+          required />
+        <input
+          type="password"
+          name="password"
+          placeholder="Adj meg egy jelszót"
+          class="inputField"
+          required />
+        <button type="submit" class="highlightOnHoverButton">
+          Regisztráció
+        </button>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='js/themeChange.js') }}"></script>
+{% endblock %}

@@ -3,14 +3,22 @@ let currentSort = { column: "word", ascending: true };
 
 function updateSummary() {
   const totalWords = words.length;
-  const avgConfidence =
-    words.reduce((acc, word) => acc + word.confidenceIndex, 0) / totalWords;
+  let avgConfidence = 0;
+  if (totalWords === 0) {
+    avgConfidence = 0;
+  } else {
+    avgConfidence =
+      words.reduce((acc, word) => acc + word.confidenceIndex, 0) / totalWords;
+  }
   const positiveWords = words.filter((word) => word.confidenceIndex > 0).length;
   const negativeWords = words.filter((word) => word.confidenceIndex < 0).length;
 
   document.getElementById("totalWords").textContent = totalWords;
-  document.getElementById("avgConfidence").textContent =
-    avgConfidence.toFixed(2);
+  document.getElementById("avgConfidence").textContent = Number.isFinite(
+    avgConfidence
+  )
+    ? avgConfidence.toFixed(2)
+    : "0.00";
   document.getElementById("positiveWords").textContent = positiveWords;
   document.getElementById("negativeWords").textContent = negativeWords;
 }
@@ -44,6 +52,7 @@ function sortWords(column) {
 
 function displayWords() {
   const tbody = document.getElementById("statsBody");
+  if (!tbody) return;
   tbody.innerHTML = "";
 
   words.forEach((word) => {
@@ -68,20 +77,19 @@ function loadStatistics() {
     .then((response) => response.json())
     .then((data) => {
       if (data.status === "success") {
-        words = data.words;
+        words = data.words || [];
         updateSummary();
         displayWords();
       }
     });
 }
 
-// Add event listeners for sorting
-document.querySelectorAll(".sort-button").forEach((button) => {
-  button.addEventListener("click", (e) => {
-    const column = e.target.getAttribute("data-sort");
-    sortWords(column);
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll(".sort-button").forEach((button) => {
+    button.addEventListener("click", (e) => {
+      const column = e.target.getAttribute("data-sort");
+      if (column) sortWords(column);
+    });
   });
+  loadStatistics();
 });
-
-// Load statistics when the page loads
-document.addEventListener("DOMContentLoaded", loadStatistics);

@@ -1,0 +1,19 @@
+#helpModal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #000a;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+#modalDiv {
+  background: #222;
+  padding: 2em;
+  text-align: center;
+  min-width: 250px;
+}

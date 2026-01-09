@@ -1,93 +1,56 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gyakorlás</title>
-    <link rel="stylesheet" href="../static/styles/components/practice.css" />
-    <link rel="stylesheet" href="../static/styles/global.css" />
-    <script src="../static/js/styleLoader.js"></script>
-    <link
-      id="themeStylesheet"
-      rel="stylesheet"
-      href="{{ url_for('static', filename='styles/themes/' + (theme or 'themeDark') + '.css') }}" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='styles/responsive.css') }}" />
-  </head>
-  <body>
-    <main>
-      <div class="wordDisplay">
-        <h1>PLACEHOLDER</h1>
-      </div>
-      <br />
-      <div class="inputFielddiv">
-        <input class="inputField" type="text" placeholder="PLACEHOLDER" />
-      </div>
-      <br />
-      <div
-        class="feedback"
-        id="feedback"
-        style="text-align: center; font-size: 1.25em; min-height: 2em"></div>
-      <br />
-      <div class="buttonList">
-        <a href="{{url_for('routeToIndex')}}"
-          ><button class="highlightOnHoverButton" id="Home">Vissza</button></a
-        >
-        <button class="highlightOnHoverButton" id="Help">Segítség</button>
-        <button class="highlightOnHoverButton" id="GiveUp">Feladás</button>
-        <button class="highlightOnHoverButton" id="Switch">Nyelvváltás</button>
-        <button class="highlightOnHoverButton" id="Check">Ellenőrzés</button>
-      </div>
-      <div
-        id="helpModal"
-        style="
-          display: none;
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100vw;
-          height: 100vh;
-          background: #000a;
-          justify-content: center;
-          align-items: center;
-          z-index: 1000;
-        ">
-        <div
-          style="
-            background: #222;
-            padding: 2em;
-            text-align: center;
-            min-width: 250px;
-          ">
-          <h3>Válassz segítséget</h3>
-          <button
-            style="padding: 8px"
-            id="helpMultipleChoice"
-            class="highlightOnHoverButton">
-            Feleletválasztós
-          </button>
-          <button
-            style="padding: 8px"
-            id="helpShowVowels"
-            class="highlightOnHoverButton">
-            Magánhangzók mutatása
-          </button>
-          <br /><br />
-          <button
-            style="padding: 8px"
-            id="helpCancel"
-            class="highlightOnHoverButton">
-            Mégsem
-          </button>
-          <div id="helpChoices" style="margin-top: 1em; gap: 5px"></div>
-        </div>
-      </div>
-    </main>
-    <script src="../static/js/randomPractice.js"></script>
-    <script src="../static/js/themeChange.js"></script>
-  </body>
-</html>
+{% extends 'base.html' %} {% block title %}Gyakorlás{% endblock %} {% block
+head_extra %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='styles/components/practice.css') }}" />
+{% endblock %} {% block content %}
+<main>
+  <div class="wordDisplay"><h1>PLACEHOLDER</h1></div>
+  <br />
+  <div class="inputFielddiv">
+    <input class="inputField" type="text" placeholder="PLACEHOLDER" />
+  </div>
+  <br />
+  <div
+    class="feedback"
+    id="feedback"
+    style="text-align: center; font-size: 1.25em; min-height: 2em"></div>
+  <br />
+  <div class="buttonList">
+    <a href="{{url_for('routeToIndex')}}" class="menu-button small"
+      ><button class="highlightOnHoverButton">Vissza</button></a
+    >
+    <button class="highlightOnHoverButton" id="Help">Segítség</button>
+    <button class="highlightOnHoverButton" id="GiveUp">Feladás</button>
+    <button class="highlightOnHoverButton" id="Switch">Nyelvváltás</button>
+    <button class="highlightOnHoverButton" id="Check">Ellenőrzés</button>
+  </div>
+  <div id="helpModal">
+    <div id="modalDiv">
+      <h3>Válassz segítséget</h3>
+      <button
+        style="padding: 8px"
+        id="helpMultipleChoice"
+        class="highlightOnHoverButton">
+        Feleletválasztós
+      </button>
+      <button
+        style="padding: 8px"
+        id="helpShowVowels"
+        class="highlightOnHoverButton">
+        Magánhangzók mutatása
+      </button>
+      <br /><br />
+      <button
+        style="padding: 8px"
+        id="helpCancel"
+        class="highlightOnHoverButton">
+        Mégsem
+      </button>
+      <div id="helpChoices" style="margin-top: 1em; gap: 5px"></div>
+    </div>
+  </div>
+</main>
+{% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='js/randomPractice.js') }}"></script>
+{% endblock %}

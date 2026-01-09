@@ -1,54 +1,32 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>New word</title>
-    <link rel="stylesheet" href="../static/styles/components/new.css" />
-    <link rel="stylesheet" href="../static/styles/global.css" />
-    <script src="../static/js/styleLoader.js"></script>
-    <link
-      id="themeStylesheet"
-      rel="stylesheet"
-      href="{{ url_for('static', filename='styles/themes/' + (theme or 'themeDark') + '.css') }}" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='styles/responsive.css') }}" />
-  </head>
-  <body>
-    <main>
-      <div>
-        <center><h1>Új szó</h1></center>
-        <div class="inputFielddiv">
-          <input
-            id="word"
-            class="inputField"
-            type="text"
-            placeholder="Új szó" />
-        </div>
-        <center><h1>Forditása</h1></center>
-        <div class="inputFielddiv">
-          <input
-            id="translation"
-            class="inputField"
-            type="text"
-            placeholder="Forditás" />
-        </div>
-      </div>
-      <br />
-      <div class="buttonList">
-        <a href="{{url_for('routeToIndex')}}">
-          <button class="highlightOnHoverButton">Mégsem</button>
-        </a>
-        <button id="addButton" class="highlightOnHoverButton">Hozzáadás</button>
-      </div>
-    </main>
-
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="../static/js/new.js"></script>
-    <script src="../static/js/themeChange.js"></script>
-  </body>
-</html>
+{% extends 'base.html' %} {% block title %}Új szó{% endblock %} {% block
+head_extra %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='styles/components/new.css') }}" />
+{% endblock %} {% block content %}
+<main>
+  <div>
+    <center><h1>Új szó</h1></center>
+    <div class="inputFielddiv">
+      <input id="word" class="inputField" type="text" placeholder="Új szó" />
+    </div>
+    <center><h1>Forditása</h1></center>
+    <div class="inputFielddiv">
+      <input
+        id="translation"
+        class="inputField"
+        type="text"
+        placeholder="Forditás" />
+    </div>
+  </div>
+  <br />
+  <div class="buttonList">
+    <a href="{{url_for('routeToIndex')}}" class="menu-button small"
+      ><button class="highlightOnHoverButton">Vissza</button></a
+    >
+    <button id="addButton" class="highlightOnHoverButton">Hozzáadás</button>
+  </div>
+</main>
+{% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='js/new.js') }}"></script>
+{% endblock %}

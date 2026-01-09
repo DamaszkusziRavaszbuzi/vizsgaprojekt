@@ -1,154 +1,63 @@
-/* Desktop/default layout tweaks */
 .mainMenuButtons {
   margin-top: 100px;
-  margin-bottom: auto;
-  display: inline;
-  margin-left: 13%;
+  margin-left: 20px;
+  margin-right: 20px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 38vh;
+  gap: 20px;
+  align-items: stretch;
+  width: calc(100% - 40px);
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.mainMenuButtons a {
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.menu-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   height: 100%;
-  max-width: 100%;
-  /* Keep table layout on desktop */
-}
-
-/* Desktop buttons */
-.mainMenuButtons .highlightOnHoverButton {
-  width: 25vw;
-  height: 38vh;
-  font-size: 60px;
-  margin: 30px;
-  border-width: 2px;
-  border-style: solid;
+  font-size: clamp(20px, 3.5vw, 60px);
+  background: var(--Sbackground);
+  color: var(--text);
+  border: 2px solid var(--outline);
   border-radius: 2px;
-}
-
-/* --- Sidebar / mobile toggle styles --- */
-.sidenav {
-  /* Default desktop behaviour: keep it visible; if you already have styles in global.css they will apply.
-     The mobile-specific behavior below overrides this when needed via media queries. */
-  position: fixed;
-  left: 0;
-  top: 0;
-  height: 100%;
-  width: 220px;
-  padding-top: 60px;
+  text-align: center;
+  line-height: 1;
+  padding: 0 12px;
   box-sizing: border-box;
-  z-index: 1000;
-  background: var(--side-bg, #222);
-  color: var(--side-fg, #fff);
-  transition: transform 0.25s ease;
+  transition: all 0.1s ease-in-out;
 }
 
-.sidenav a {
-  display: block;
-  padding: 12px 18px;
-  color: inherit;
-  text-decoration: none;
+.menu-button:hover {
+  color: var(--HighlightText);
+  box-shadow: 0 10px var(--HighlightText);
+  transform: translateY(-4px);
 }
 
-/* Menu toggle button (hamburger) */
-.menu-toggle {
-  display: none; /* only shown on small screens via media query */
-  position: fixed;
-  left: 12px;
-  top: 12px;
-  z-index: 1100;
-  background: var(--toggle-bg, rgba(0,0,0,0.7));
-  color: var(--toggle-fg, #fff);
-  border: none;
-  padding: 10px 12px;
-  font-size: 22px;
-  border-radius: 6px;
-}
-
-/* Overlay behind the mobile menu */
-.overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.45);
-  z-index: 900;
-  transition: opacity 0.2s ease;
-}
-
-/* When sidenav is open on mobile, this class will be applied */
-.sidenav.open {
-  transform: translateX(0);
-}
-
-/* By default (mobile), hide the sidenav off-screen */
-.sidenav.mobile-hidden {
-  transform: translateX(-100%);
-}
-
-/* --- Mobile / small screens --- */
 @media (max-width: 768px) {
-  /* Show hamburger */
-  .menu-toggle {
-    display: block;
-  }
-
-  /* Hide desktop left margin; content should flow full width */
   .mainMenuButtons {
-    margin-left: 0;
-    margin-top: 70px; /* leave room for the toggle button */
+    margin-top: 70px;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-auto-rows: auto;
+    gap: 10px;
+    width: 100%;
     padding: 0 12px;
-    display: block;
-    width: 100%;
   }
 
-  /* Force table to behave as block and stack cells */
-  .mainMenuButtons,
-  .mainMenuButtons tr,
-  .mainMenuButtons td {
-    display: block;
-    width: 100%;
-  }
-
-  /* Make each button full-width, stacked vertically, smaller height and font */
-  .mainMenuButtons .highlightOnHoverButton {
-    width: calc(100% - 24px);
-    display: block;
-    margin: 10px auto;
+  .menu-button {
     height: auto;
     min-height: 12vh;
-    font-size: 20px;
     padding: 16px;
-    box-sizing: border-box;
-  }
-
-  /* Put the sidenav off screen by default and make it overlay the content when opened */
-  .sidenav {
-    width: 260px;
-    transform: translateX(-100%);
-    padding-top: 60px;
-    position: fixed;
-    background: var(--side-bg, #222);
-    box-shadow: 2px 0 6px rgba(0,0,0,0.3);
-  }
-
-  .sidenav.open {
-    transform: translateX(0);
-  }
-
-  .overlay.show {
-    display: block;
-    opacity: 1;
-  }
-
-  /* Ensure main content scrolls; we avoid fixed heights so page scrolls vertically */
-  body, html, main {
-    height: auto;
-    overflow-x: hidden;
-  }
-}
-
-/* Small enhancement for medium screens if needed */
-@media (min-width: 769px) {
-  /* Ensure overlay is hidden on desktop */
-  .overlay {
-    display: none !important;
-  }
-  .sidenav.mobile-hidden {
-    transform: none;
+    font-size: 20px;
   }
 }

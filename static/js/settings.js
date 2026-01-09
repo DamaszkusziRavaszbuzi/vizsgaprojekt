@@ -1,4 +1,3 @@
-// Utilities to show messages
 function showMessage(text, type = "success") {
   const el = document.getElementById("msg");
   el.textContent = text;
@@ -9,13 +8,13 @@ function showMessage(text, type = "success") {
   }, 4000);
 }
 
-// Load current username
 function loadUserInfo() {
   fetch("/get_user_info")
     .then((r) => r.json())
     .then((data) => {
       if (data.status === "success") {
-        document.getElementById("username").value = data.user.username || "";
+        const el = document.getElementById("username");
+        if (el) el.value = data.user.username || "";
       } else {
         showMessage(
           data.message || "Hiba a felhasználó adatainak betöltése közben",
@@ -26,7 +25,6 @@ function loadUserInfo() {
     .catch(() => showMessage("Hálózati hiba", "error"));
 }
 
-// Update user info
 function saveChanges() {
   const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value;
@@ -56,13 +54,11 @@ function saveChanges() {
     .catch(() => showMessage("Hálózati hiba", "error"));
 }
 
-// Logout (re-uses your /logout endpoint)
 function logout() {
   fetch("/logout", { method: "POST" })
     .then((r) => r.json())
     .then((data) => {
       if (data.status === "success") {
-        // Redirect to login
         window.location.href = "/login";
       } else {
         showMessage("Sikertelen kijelentkezés", "error");
@@ -71,17 +67,18 @@ function logout() {
     .catch(() => showMessage("Hálózati hiba", "error"));
 }
 
-// Theme apply placeholder
 function applyTheme() {
   const theme = document.getElementById("themeSelect").value;
+  applyThemeClient(theme, true);
   showMessage("Téma megváltoztatva: " + theme);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   loadUserInfo();
-  document.getElementById("saveBtn").addEventListener("click", saveChanges);
-  document.getElementById("logoutBtn").addEventListener("click", logout);
-  document
-    .getElementById("applyThemeBtn")
-    .addEventListener("click", applyTheme);
+  const saveBtn = document.getElementById("saveBtn");
+  if (saveBtn) saveBtn.addEventListener("click", saveChanges);
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) logoutBtn.addEventListener("click", logout);
+  const applyBtn = document.getElementById("applyThemeBtn");
+  if (applyBtn) applyBtn.addEventListener("click", applyTheme);
 });

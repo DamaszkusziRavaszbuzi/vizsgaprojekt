@@ -1,33 +1,34 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ajánlott angol szó</title>
-    <link rel="stylesheet" href="../static/styles/global.css" />
-    <link rel="stylesheet" href="../static/styles/components/autonew.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles/responsive.css') }}">
-<script src="../static/js/styleLoader.js"></script>
-    <link
-      id="themeStylesheet"
-      rel="stylesheet"
-      href="{{ url_for('static', filename='styles/themes/' + (theme or 'themeDark') + '.css') }}" />
-  </head>
-  <body>
-    <main>
-      <div class="wordDisplay" style="height: 120px">
-        <h1 id="word">...</h1>
-      </div>
-      <div class="wordDisplay" style="height: 120px">
-        <h1 id="translation">...</h1>
-      </div>
-        <div class="buttonList">
-        <button class="highlightOnHoverButton" onclick="dismissSuggestion()" style="font-size: 40px;">X</button>
-        <a href="{{url_for('routeToIndex')}}"><button class="highlightOnHoverButton" style="font-size: 40px;">⤶</button></a>
-        <button class="highlightOnHoverButton" onclick="acceptSuggestion()"style="font-size: 40px;">✓</button>
-    </main>
-    <script src="../static/js/autonew.js"></script>
-    <script src="../static/js/themeChange.js"></script>
-  </body>
-</html>
+{% extends 'base.html' %} {% block title %}Ajánlott angol szó{% endblock %} {%
+block head_extra %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='styles/components/autonew.css') }}" />
+{% endblock %} {% block content %}
+<main>
+  <div class="wordDisplay" style="height: 120px"><h1 id="word">...</h1></div>
+  <div class="wordDisplay" style="height: 120px">
+    <h1 id="translation">...</h1>
+  </div>
+  <div class="buttonList">
+    <button
+      class="highlightOnHoverButton"
+      onclick="dismissSuggestion()"
+      style="font-size: 40px">
+      X
+    </button>
+    <a href="{{url_for('routeToIndex')}}" class="menu-button small"
+      ><button class="highlightOnHoverButton" style="font-size: 40px">
+        ⤶
+      </button></a
+    >
+    <button
+      class="highlightOnHoverButton"
+      onclick="acceptSuggestion()"
+      style="font-size: 40px">
+      ✓
+    </button>
+  </div>
+</main>
+{% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='js/autonew.js') }}"></script>
+{% endblock %}

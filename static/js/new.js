@@ -1,13 +1,29 @@
-// On button click, send the form data to the backend
-$("#addButton").click(function () {
-  const word = $("#word").val();
-  const translation = $("#translation").val();
+document.addEventListener("DOMContentLoaded", function () {
+  const addButton = document.getElementById("addButton");
+  const wordInput = document.getElementById("word");
+  const translationInput = document.getElementById("translation");
 
-  $.post("/add_word", { word, translation })
-    .done(function (response) {
-      alert(response.message); // Show success message
+  if (!addButton || !wordInput || !translationInput) return;
+
+  addButton.addEventListener("click", function () {
+    const word = wordInput.value.trim();
+    const translation = translationInput.value.trim();
+
+    fetch("/add_word", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ word, translation }).toString(),
     })
-    .fail(function (response) {
-      alert(response.responseJSON.message); // Show error message
-    });
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.status === "success") {
+          alert(data.message);
+          wordInput.value = "";
+          translationInput.value = "";
+        } else {
+          alert(data.message || "Hiba történt");
+        }
+      })
+      .catch(() => alert("Hálózati hiba"));
+  });
 });
