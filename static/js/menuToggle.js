@@ -1,3 +1,6 @@
+// menuToggle.js: accessible mobile side navigation toggling.
+// Implements open/close behavior, focus management and escape-to-close.
+
 (function () {
   const menuToggle = document.getElementById("menuToggle");
   const sidenav = document.getElementById("sidenav");
@@ -7,6 +10,7 @@
   if (!sidenav || !menuToggle || !overlay) return;
 
   function initState() {
+    // Hide the sidenav on mobile by default and set ARIA attributes accordingly
     sidenav.classList.add("mobile-hidden");
     sidenav.classList.remove("open");
     overlay.classList.remove("show");
@@ -15,6 +19,7 @@
   }
 
   function openMenu() {
+    // Open sidenav and move focus to first link for keyboard users
     sidenav.classList.add("open");
     sidenav.classList.remove("mobile-hidden");
     overlay.classList.add("show");
@@ -31,6 +36,7 @@
     overlay.classList.remove("show");
     overlay.setAttribute("aria-hidden", "true");
     menuToggle.setAttribute("aria-expanded", "false");
+    // Restore focus to the element that opened the menu
     if (lastFocused) lastFocused.focus();
   }
 
@@ -48,6 +54,7 @@
     toggleMenu();
   });
 
+  // Close when clicking overlay or a link inside the nav
   overlay.addEventListener("click", function () {
     closeMenu();
   });
@@ -58,12 +65,14 @@
     }
   });
 
+  // ESC closes the menu for keyboard users
   window.addEventListener("keydown", function (e) {
     if (e.key === "Escape") {
       if (sidenav.classList.contains("open")) closeMenu();
     }
   });
 
+  // Reset to initial state on resize to avoid inconsistent states between desktop/mobile
   window.addEventListener("resize", function () {
     initState();
   });

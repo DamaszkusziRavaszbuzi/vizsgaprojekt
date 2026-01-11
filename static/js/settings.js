@@ -1,3 +1,6 @@
+// settings.js: load and save user settings (username/password), theme application and logout handling.
+// Adds helpful UI messaging using showMessage helper.
+
 function showMessage(text, type = "success") {
   const el = document.getElementById("msg");
   el.textContent = text;
@@ -9,6 +12,7 @@ function showMessage(text, type = "success") {
 }
 
 function loadUserInfo() {
+  // Populate the username input with current value from server
   fetch("/get_user_info")
     .then((r) => r.json())
     .then((data) => {
@@ -26,6 +30,7 @@ function loadUserInfo() {
 }
 
 function saveChanges() {
+  // Send updated username and password to server. Password can be empty to leave unchanged.
   const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value;
 
@@ -68,6 +73,7 @@ function logout() {
 }
 
 function applyTheme() {
+  // Apply theme immediately on client and optionally persist to server.
   const theme = document.getElementById("themeSelect").value;
   applyThemeClient(theme, true);
   showMessage("Téma megváltoztatva: " + theme);

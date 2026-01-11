@@ -46,6 +46,16 @@
     { "english": "jump", "hungarian": "ugrik" },
     { "english": "read", "hungarian": "olvas" },
     { "english": "write", "hungarian": "ír" },
-    { "english": "work", "hungarian": "dolgozik" }
+    { "english": "work", "hungarian": "dolgozik" },
+    { "english": "love", "hungarian": "szeretet" },
+    { "english": "trust", "hungarian": "bizalom" },
+    { "english": "joy", "hungarian": "öröm" },
+    { "english": "peace", "hungarian": "béke" },
+    { "english": "city", "hungarian": "főváros" },
+    { "english": "tree", "hungarian": "fa" },
+    { "english": "flower", "hungarian": "virág" },
+    { "english": "sky", "hungarian": "ég" },
+    { "english": "cloud", "hungarian": "felhő" },
+    { "english": "wind", "hungarian": "szél" }
   ]
 }

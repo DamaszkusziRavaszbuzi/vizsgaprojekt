@@ -1,7 +1,10 @@
+// statistics.js: client-side rendering and sorting of word statistics table.
+
 let words = [];
 let currentSort = { column: "word", ascending: true };
 
 function updateSummary() {
+  // Compute totals and averages displayed above the table
   const totalWords = words.length;
   let avgConfidence = 0;
   if (totalWords === 0) {
@@ -24,12 +27,14 @@ function updateSummary() {
 }
 
 function getConfidenceClass(confidence) {
+  // Return a CSS class to visually indicate confidence sign
   if (confidence > 0) return "confidence-positive";
   if (confidence < 0) return "confidence-negative";
   return "confidence-neutral";
 }
 
 function sortWords(column) {
+  // Toggle ascending/descending if same column selected twice
   if (currentSort.column === column) {
     currentSort.ascending = !currentSort.ascending;
   } else {
@@ -51,6 +56,7 @@ function sortWords(column) {
 }
 
 function displayWords() {
+  // Render rows into table body #statsBody
   const tbody = document.getElementById("statsBody");
   if (!tbody) return;
   tbody.innerHTML = "";
@@ -73,6 +79,7 @@ function displayWords() {
 }
 
 function loadStatistics() {
+  // Fetch statistics from server and render them
   fetch("/get_word_statistics")
     .then((response) => response.json())
     .then((data) => {
@@ -85,6 +92,7 @@ function loadStatistics() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
+  // Hook up column sort buttons identified by .sort-button and data-sort attribute
   document.querySelectorAll(".sort-button").forEach((button) => {
     button.addEventListener("click", (e) => {
       const column = e.target.getAttribute("data-sort");

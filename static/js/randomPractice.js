@@ -1,7 +1,9 @@
+// randomPractice.js: core practice interactions for checking answers, getting help and learning-mode flow.
+
 let currentWord;
 let currentTranslation;
 let wordID;
-let translationDirection = true;
+let translationDirection = true; // true means display English and expect Hungarian
 let helpUsed = false;
 
 let learningMode = false;
@@ -22,6 +24,7 @@ function clearFeedback() {
 }
 
 function setInputState(enabled) {
+  // Enable/disable interactive controls while waiting for responses
   inputField.disabled = !enabled;
   document.querySelector("#Check").disabled = !enabled;
   document.querySelector("#GiveUp").disabled = !enabled;
@@ -32,10 +35,12 @@ function getUrlParam(name) {
 }
 
 if (getUrlParam("mode") === "learning") {
+  // If URL contains mode=learning, toggle learning flow which pulls IDs from /get_learning_words
   learningMode = true;
 }
 
 function pickNextLearningWord() {
+  // If we have no cached learningWordIDs, request them from server.
   if (learningWordIDs.length === 0) {
     fetch("/get_learning_words")
       .then((r) => r.json())
@@ -56,6 +61,7 @@ function pickNextLearningWord() {
     return;
   }
 
+  // Choose an unused ID at random; if all used, reset usedLearningWordIDs to allow repeats
   let available = learningWordIDs.filter(
     (id) => !usedLearningWordIDs.includes(id)
   );
@@ -67,6 +73,7 @@ function pickNextLearningWord() {
   const wordIDToUse = available[idx];
   usedLearningWordIDs.push(wordIDToUse);
 
+  // Fetch the word details by ID from server
   fetch("/get_word_by_id", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -98,6 +105,7 @@ function pickNextLearningWord() {
 }
 
 function loadRandomWord() {
+  // Central entry point for loading the next word into the UI.
   setInputState(false);
   helpUsed = false;
   if (learningMode) {
@@ -138,6 +146,7 @@ function loadRandomWord() {
 window.onload = loadRandomWord;
 
 document.querySelector("#Switch").addEventListener("click", function () {
+  // Toggle translation direction on both server (session) and client for immediate UX changes.
   fetch("/switch_translation", { method: "POST" })
     .then((response) => response.json())
     .then((data) => {
@@ -156,6 +165,7 @@ document.querySelector("#Switch").addEventListener("click", function () {
 });
 
 document.querySelector("#Check").addEventListener("click", function () {
+  // When user checks an answer, compute status based on correctness and whether help was used.
   setInputState(false);
   const userInput = inputField.value.trim();
   const correctAnswer = translationDirection ? currentTranslation : currentWord;
@@ -168,6 +178,7 @@ document.querySelector("#Check").addEventListener("click", function () {
     status = helpUsed ? "failWithHelp" : "fail";
   }
 
+  // Persist result to server, then show feedback and load next word after a small delay.
   fetch("/update_score", {
     method: "POST",
     headers: {
@@ -199,6 +210,7 @@ document.querySelector("#Check").addEventListener("click", function () {
 });
 
 document.querySelector("#GiveUp").addEventListener("click", function () {
+  // User gives up: count as fail (or failWithHelp if helpUsed true), show correct answer and move on.
   setInputState(false);
   const correctAnswer = translationDirection ? currentTranslation : currentWord;
 
@@ -232,6 +244,7 @@ document.querySelector("#GiveUp").addEventListener("click", function () {
 });
 
 function showHelpModal() {
+  // Present help modal with options multiple choice or show vowels
   document.getElementById("helpModal").style.display = "flex";
   document.getElementById("helpChoices").innerHTML = "";
 }
@@ -247,6 +260,7 @@ document.querySelector("#Help").addEventListener("click", function () {
 document.getElementById("helpCancel").onclick = hideHelpModal;
 
 document.getElementById("helpMultipleChoice").onclick = function () {
+  // Help: show multiple choice alternatives. Mark helpUsed=true so scoring reflects help.
   helpUsed = true;
 
   fetch("/get_choices", {
@@ -272,6 +286,7 @@ document.getElementById("helpMultipleChoice").onclick = function () {
         btn.className = "highlightOnHoverButton";
         btn.innerText = choice;
         btn.style = "padding: 8px; margin: 3px;";
+        // Clicking a choice fills the input and closes the modal
         btn.onclick = () => {
           inputField.value = choice;
           hideHelpModal();
@@ -286,10 +301,12 @@ document.getElementById("helpMultipleChoice").onclick = function () {
 };
 
 document.getElementById("helpShowVowels").onclick = function () {
+  // Help option to reveal vowels in the correct answer as a hint.
   helpUsed = true;
 
   const answer = translationDirection ? currentTranslation : currentWord;
 
+  // Use a regex that covers Hungarian vowels (including accented characters)
   const vowels = answer.match(/[aeiouáéíóöőúüűAEIOUÁÉÍÓÖŐÚÜŰ]/g);
   const vowelString = vowels ? vowels.join("") : "";
   inputField.placeholder = `Magánhangzók: ${vowelString}`;

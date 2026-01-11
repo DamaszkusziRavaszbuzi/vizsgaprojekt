@@ -1,4 +1,8 @@
+// edit.js: functionality for editing and deleting user words in a table.
+// The file loads words, provides inline edit UI and makes AJAX calls to update the server.
+
 function loadWords() {
+  // Request user's words and populate the table body (#wordsList)
   fetch("/get_user_words")
     .then((response) => response.json())
     .then((data) => {
@@ -12,6 +16,7 @@ function loadWords() {
           row.className = "word-row";
           row.setAttribute("data-word-id", word.id);
 
+          // Buttons for edit/delete/save/cancel. Save and cancel are hidden initially by CSS.
           row.innerHTML = `
                                 <td class="word-cell">${word.word}</td>
                                 <td class="translation-cell">${word.translation}</td>
@@ -29,6 +34,7 @@ function loadWords() {
 }
 
 function deleteWord(wordId) {
+  // Confirm deletion then request server to delete the word
   if (confirm("Biztosan törölni szeretnéd ezt a szót?")) {
     fetch("/delete_word", {
       method: "POST",
@@ -47,6 +53,7 @@ function deleteWord(wordId) {
 }
 
 function updateWord(wordId, word, translation) {
+  // Send updated word data to server
   fetch("/update_word", {
     method: "POST",
     headers: {
@@ -69,6 +76,7 @@ function updateWord(wordId, word, translation) {
 document.addEventListener("DOMContentLoaded", function () {
   const wordsList = document.getElementById("wordsList");
   if (wordsList) {
+    // Use event delegation to handle button clicks inside the table
     wordsList.addEventListener("click", function (e) {
       const row = e.target.closest(".word-row");
       if (!row) return;
@@ -84,6 +92,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (e.target.classList.contains("delete-button")) {
         deleteWord(wordId);
       } else if (e.target.classList.contains("edit-button")) {
+        // Turn cells into inputs for inline editing and store original values on the row
         const originalWord = wordCell.textContent;
         const originalTranslation = translationCell.textContent;
 
@@ -98,6 +107,7 @@ document.addEventListener("DOMContentLoaded", function () {
         row.setAttribute("data-original-word", originalWord);
         row.setAttribute("data-original-translation", originalTranslation);
       } else if (e.target.classList.contains("save-button")) {
+        // Read input values and call update
         const newWord = row.querySelector(".word-cell input").value;
         const newTranslation = row.querySelector(
           ".translation-cell input"
@@ -105,6 +115,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         updateWord(wordId, newWord, newTranslation);
       } else if (e.target.classList.contains("cancel-button")) {
+        // Restore original values and reset button visibility
         wordCell.textContent = row.getAttribute("data-original-word");
         translationCell.textContent = row.getAttribute(
           "data-original-translation"
