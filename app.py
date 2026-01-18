@@ -4,11 +4,16 @@
 from flask import Flask, request, jsonify, render_template, session, redirect
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
-import random
 import os
 import json
 import hashlib
 import hmac
+import threading
+import time
+import re
+import random
+import ollama 
+from concurrent.futures import ThreadPoolExecutor
 
 #==========================
 #          Init
@@ -20,15 +25,21 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'furryfemboy')
 
 DATABASE = 'database.db'
-DICTIONARY_FILE = "dictionary.json"
-VERBOSE_LOGGING = False
+VERBOSE_LOGGING = True
 HMAC_FILE = DATABASE + ".hmac"
+
+# Ollama settings
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "gpt-oss:20b")
+OLLAMA_TIMEOUT = int(os.environ.get('OLLAMA_TIMEOUT', '180'))  # seconds for timeouts/polling
+
+# Maximum concurrent workers for precaching at startup
+PRECACHE_WORKERS = int(os.environ.get("PRECACHE_WORKERS", "4"))
 
 def get_db_connection():
     """Open a sqlite3 connection using the configured DATABASE path.
     Uses Row factory so returned rows behave like dicts in code.
     """
-    conn = sqlite3.connect(DATABASE)
+    conn = sqlite3.connect(DATABASE, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -38,9 +49,7 @@ def deb_mes(msg):
         print(msg)
 
 def _hmac_key_bytes():
-    """Build HMAC key bytes from environment or app secret.
-    This is used to compute an integrity HMAC of the SQLite file so accidental tampering can be detected.
-    """
+    """Build HMAC key bytes from environment or app secret."""
     key = os.environ.get('DB_HMAC_KEY') or app.secret_key or ''
     return key.encode('utf-8')
 
@@ -61,12 +70,7 @@ def write_db_hmac(h):
         f.write(h)
 
 def verify_db_hmac():
-    """Verify HMAC on startup to detect database integrity changes.
-    - If database doesn't exist: allow (likely first run).
-    - If HMAC file doesn't exist: write current HMAC (bootstrap).
-    - If mismatch: raise RuntimeError to avoid running with tampered DB.
-    Note: This is a lightweight integrity check, not a substitute for proper backups.
-    """
+    """Verify HMAC on startup to detect database integrity changes."""
     if not os.path.exists(DATABASE):
         return True
     current = compute_db_hmac()
@@ -85,24 +89,17 @@ def update_db_hmac():
     write_db_hmac(h)
 
 def commit_and_update(conn):
-    """Commit a sqlite connection, close it and update HMAC afterwards.
-    Centralizes commit + integrity update to ensure consistency.
-    """
+    """Commit a sqlite connection, close it and update HMAC afterwards."""
     conn.commit()
     conn.close()
     update_db_hmac()
 
 def get_confidence_index(word_row):
-    """Calculate a 'confidence index' for a word from its statistics.
-    A higher number means the user knows the word better.
-    Formula reflects different weights for passes vs fails and with/without help.
-    """
+    """Calculate a 'confidence index' for a word from its statistics."""
     return (word_row['pass'] * 2) + word_row['passWithHelp'] - word_row['fail'] - (word_row['failWithHelp'] * 2)
 
 def init_db():
-    """Create tables if they don't exist.
-    This function is idempotent and can be safely called on startup.
-    """
+    """Create tables if they don't exist. Idempotent."""
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('''
@@ -126,52 +123,415 @@ def init_db():
             FOREIGN KEY (userID) REFERENCES users(id)
         );
     ''')
+    # Table to hold per-user suggestion buffers (random and smart).
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS suggestions (
+            userID INTEGER PRIMARY KEY,
+            random_buffer TEXT DEFAULT '[]',
+            smart_buffer TEXT DEFAULT '[]',
+            FOREIGN KEY (userID) REFERENCES users(id)
+        );
+    ''')
     commit_and_update(conn)
 
-def load_dictionary():
-    """Load a JSON dictionary file containing English-Hungarian entries.
-    Returns an empty list if the file cannot be read or parsed.
+# =========================
+#  Ollama / AI integration (robust)
+# =========================
+
+def _extract_response_from_obj(res):
     """
+    Try to extract textual response from various shapes returned by ollama.generate:
+    - dict-like: keys 'response','text','output','content'
+    - attribute: res.response
+    - plain string
+    - repr containing response='...'
+    Returns string or None.
+    """
+    if res is None:
+        return None
+
+    if isinstance(res, dict):
+        for key in ('response', 'text', 'output', 'content'):
+            val = res.get(key)
+            if val:
+                return str(val).strip()
+
     try:
-        with open(DICTIONARY_FILE, "r", encoding='utf-8') as f:
-            data = json.load(f)
-            return data.get("dictionary", [])
+        val = getattr(res, 'response', None)
+        if val:
+            return str(val).strip()
+    except Exception:
+        pass
+
+    if isinstance(res, str):
+        s = res.strip()
+        if s:
+            return s
+
+    s = str(res)
+    m = re.search(r"response\s*=\s*'([^']*)'", s, flags=re.DOTALL)
+    if not m:
+        m = re.search(r'response\s*=\s*"([^"]*)"', s, flags=re.DOTALL)
+    if m:
+        return m.group(1).strip()
+
+    return None
+
+def ollama_generate(prompt):
+    """
+    Generate using the ollama python client. Wait/poll for a textual response up to OLLAMA_TIMEOUT seconds.
+    Returns the response text or None on failure/timeout.
+    """
+    start = time.time()
+    try:
+        first = ollama.generate(model=OLLAMA_MODEL, prompt=prompt)
+    except Exception as e:
+        deb_mes(f"ollama.generate initial call exception: {e}")
+        return None
+
+    # quick extraction
+    resp = _extract_response_from_obj(first)
+    if resp:
+        return resp
+
+    # If iterable/stream-like, try consuming chunks
+    try:
+        if hasattr(first, "__iter__") and not isinstance(first, (str, bytes, dict)):
+            acc = []
+            for chunk in first:
+                try:
+                    acc.append(str(chunk))
+                except Exception:
+                    pass
+                combined = "".join(acc)
+                r = _extract_response_from_obj(combined)
+                if r:
+                    return r
+                if time.time() - start > OLLAMA_TIMEOUT:
+                    deb_mes("ollama_generate: iterable stream timed out")
+                    return None
+    except Exception as e:
+        deb_mes(f"ollama_generate: iter consume failed: {e}")
+
+    # If the object contains an id, poll ollama.get(id) if available
+    id_ = None
+    if isinstance(first, dict):
+        id_ = first.get("id")
+    else:
+        try:
+            id_ = getattr(first, "id", None)
+        except Exception:
+            id_ = None
+
+    ollama_get = getattr(ollama, "get", None)
+    if id_ and callable(ollama_get):
+        deb_mes(f"ollama_generate: polling ollama.get for id {id_}")
+        while time.time() - start <= OLLAMA_TIMEOUT:
+            try:
+                polled = ollama_get(id_)
+                r = _extract_response_from_obj(polled)
+                if r:
+                    return r
+            except Exception as e:
+                deb_mes(f"ollama.get exception while polling id {id_}: {e}")
+            time.sleep(1.0)
+
+    # Retry generate calls until timeout
+    retry_sleep = 1.0
+    while time.time() - start <= OLLAMA_TIMEOUT:
+        try:
+            deb_mes("ollama_generate: retrying ollama.generate to wait for completion")
+            candidate = ollama.generate(model=OLLAMA_MODEL, prompt=prompt)
+            r = _extract_response_from_obj(candidate)
+            if r:
+                return r
+        except Exception as e:
+            deb_mes(f"ollama.generate retry exception: {e}")
+        time.sleep(retry_sleep)
+
+    deb_mes("ollama_generate: timed out without receiving response")
+    return None
+
+def parse_ai_pairs(text):
+    """
+    Parse AI output into a list of (english, hungarian) pairs.
+    Expected format: lines of "word:translation".
+    Accepts minor numbering/punctuation. Returns list only if exactly 4 valid pairs are parsed.
+    """
+    if not text:
+        return []
+    pairs = []
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    for line in lines:
+        line = re.sub(r'^\s*\d+\.\s*', '', line)  # remove leading numbering
+        if ":" not in line:
+            continue
+        eng, hun = line.split(":", 1)
+        eng = eng.strip().strip('.,;:')
+        hun = hun.strip().strip('.,;:')
+        if eng and hun:
+            pairs.append({"word": eng, "translation": hun})
+    if len(pairs) == 4:
+        return pairs
+    deb_mes(f"parse_ai_pairs: expected 4 pairs, got {len(pairs)}; raw: {text[:500]!r}")
+    return []
+
+def ai_generate_random_pairs(user_id):
+    """
+    Generate 4 random pairs via AI, then filter out words already present for the user.
+    Returns list of pairs (may be less than 4 if filtering removed some) or None on failure.
+    """
+    out = ollama_generate(
+        "Give me 4 completely random English word. Also give the words' translation in Hungarian, "
+        "separate the word and it's translation by a \":\". Begin the next word in a new line. "
+        "Don't think for long. Pick words that have exact translations."
+    )
+    if out is None:
+        return None
+    parsed = parse_ai_pairs(out)
+    if not parsed:
+        return None
+
+    # Filter out words already in user's dictionary (case-insensitive)
+    filtered = []
+    existing = _get_user_words_set_lower(user_id)
+    for p in parsed:
+        if p['word'].strip().lower() in existing:
+            deb_mes(f"ai_generate_random_pairs: removing already-known word '{p['word']}' for user {user_id}")
+            continue
+        filtered.append(p)
+    # Return filtered list (may be empty)
+    return filtered
+
+def ai_generate_smart_pairs(user_id, user_words):
+    """
+    Generate 4 smart pairs via AI, using up to 40 sample words if user has many.
+    Filter out words already present for the user before returning.
+    """
+    # If user has more than 40 words, pick 40 randomly for the prompt
+    sample = user_words
+    if len(user_words) > 40:
+        sample = random.sample(user_words, 40)
+    words_list = ", ".join(sample) if sample else ""
+    prompt = (
+        "A set of words is given. Give me 4 completely random English word that matches the commonness/level "
+        "of the given words. Also give the words' translation in Hungarian, separate the word and the translation "
+        "by a \":\". Begin the next word in a new line. The given words are: [{}]. "
+        "Don't think for long. Pick words that have exact translations."
+    ).format(words_list)
+
+    out = ollama_generate(prompt)
+    if out is None:
+        return None
+    parsed = parse_ai_pairs(out)
+    if not parsed:
+        return None
+
+    # Filter against user's existing words
+    filtered = []
+    existing = _get_user_words_set_lower(user_id)
+    for p in parsed:
+        if p['word'].strip().lower() in existing:
+            deb_mes(f"ai_generate_smart_pairs: removing already-known word '{p['word']}' for user {user_id}")
+            continue
+        filtered.append(p)
+    return filtered
+
+# =========================
+#  Suggestion buffer and concurrency control (with dedupe-on-pop)
+# =========================
+
+generation_lock = threading.Lock()
+generation_in_progress = {}  # keys are tuples (user_id, kind)
+
+def mark_generation(user_id, kind, value):
+    with generation_lock:
+        generation_in_progress[(user_id, kind)] = bool(value)
+
+def is_generating(user_id, kind):
+    with generation_lock:
+        return generation_in_progress.get((user_id, kind), False)
+
+def get_suggestion_row(user_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT random_buffer, smart_buffer FROM suggestions WHERE userID = ?', (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row
+
+def ensure_suggestion_row(user_id):
+    """Ensure suggestions row exists for user."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('INSERT OR IGNORE INTO suggestions (userID, random_buffer, smart_buffer) VALUES (?, ?, ?)', (user_id, '[]', '[]'))
+    commit_and_update(conn)
+
+def read_buffer(user_id, kind):
+    """Return list of items for kind in ['random','smart']"""
+    row = get_suggestion_row(user_id)
+    if not row:
+        return []
+    raw = row['random_buffer'] if kind == 'random' else row['smart_buffer']
+    try:
+        data = json.loads(raw)
+        if isinstance(data, list):
+            return data
+        return []
     except Exception:
         return []
 
-def get_random_dictionary_entry():
-    """Return a random entry from the dictionary. If dictionary is empty, return an empty pair."""
-    entries = load_dictionary()
-    if not entries:
-        return {"english": "", "hungarian": ""}
-    return random.choice(entries)
+def write_buffer(user_id, kind, items):
+    """Overwrite buffer with items (list)"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    col = 'random_buffer' if kind == 'random' else 'smart_buffer'
+    cursor.execute(f'UPDATE suggestions SET {col} = ? WHERE userID = ?', (json.dumps(items, ensure_ascii=False), user_id))
+    commit_and_update(conn)
 
-def get_random_english_word():
-    """Convenience wrapper to get the english field from a random dictionary entry."""
-    entry = get_random_dictionary_entry()
-    return entry.get("english", "")
+def append_to_buffer(user_id, kind, items):
+    """Append items (list) to existing buffer"""
+    if not items:
+        return
+    # Filter items that are already in user's DB before appending
+    existing = _get_user_words_set_lower(user_id)
+    new_items = [i for i in items if i['word'].strip().lower() not in existing]
+    if not new_items:
+        deb_mes(f"append_to_buffer: nothing new to append for user {user_id} kind {kind}")
+        return
+    buf = read_buffer(user_id, kind)
+    buf.extend(new_items)
+    write_buffer(user_id, kind, buf)
 
-def translate_to_hungarian(word):
-    """Simple lookup from english to hungarian using the dictionary file.
-    Case-insensitive comparison.
+def pop_from_buffer(user_id, kind):
     """
-    entries = load_dictionary()
-    for entry in entries:
-        if entry.get("english", "").lower() == word.lower():
-            return entry.get("hungarian", "")
-    return ""
+    Pop and return the first item from buffer that is NOT already present in user's dictionary.
+    Removes any already-present items encountered in the process.
+    Returns (item or None, buffer_was_non_empty_bool).
+    """
+    buf = read_buffer(user_id, kind)
+    if not buf:
+        return None, False
+
+    existing = _get_user_words_set_lower(user_id)
+    new_buf = []
+    popped_item = None
+
+    for idx, item in enumerate(buf):
+        wlower = item.get('word', '').strip().lower()
+        if wlower in existing:
+            deb_mes(f"pop_from_buffer: removing already-known buffered word '{item.get('word')}' for user {user_id}")
+            continue
+        # first not-known item: return it, and keep remaining items
+        popped_item = item
+        new_buf = buf[idx+1:]
+        break
+
+    # If we popped nothing, all buffered items were known; clear buffer
+    if popped_item is None:
+        write_buffer(user_id, kind, [])
+        return None, False
+
+    # Write back remainder of buffer (already filtered)
+    write_buffer(user_id, kind, new_buf)
+    return popped_item, True
+
+def _get_user_words_set_lower(user_id):
+    """Return a set of user's words (lowercased, stripped) for quick membership checks."""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('SELECT word FROM words WHERE userID = ?', (user_id,))
+    rows = cur.fetchall()
+    conn.close()
+    return {r['word'].strip().lower() for r in rows if r['word']}
+
+def generate_and_append_for_user(user_id, kind, user_words=None):
+    """
+    Generate items with AI and append to user's buffer of given kind.
+    Respects generation_in_progress to avoid duplicates. Filters out already-known words.
+    """
+    if is_generating(user_id, kind):
+        deb_mes(f"Generation already in progress for user {user_id} kind {kind}")
+        return
+    try:
+        mark_generation(user_id, kind, True)
+        if kind == 'random':
+            new_items = ai_generate_random_pairs(user_id)
+        else:
+            new_items = ai_generate_smart_pairs(user_id, user_words or [])
+        # If AI generation failed, do nothing
+        if new_items is None:
+            deb_mes(f"generate_and_append_for_user: AI generation failed for user {user_id} kind {kind}")
+            return
+        # If filtered out to empty list, nothing to append
+        if not new_items:
+            deb_mes(f"generate_and_append_for_user: no new unique items generated for user {user_id} kind {kind}")
+            return
+        append_to_buffer(user_id, kind, new_items)
+    except Exception as e:
+        deb_mes(f"Error generating/appending suggestions for user {user_id} kind {kind}: {e}")
+    finally:
+        mark_generation(user_id, kind, False)
+
+# =========================
+#  Precache on startup
+# =========================
+
+def precache_suggestions_for_all_users():
+    """
+    Pre-generate and append suggestions for both random and smart for every existing user.
+    Uses a ThreadPoolExecutor to limit concurrency (PRECACHE_WORKERS).
+    Runs in background as a daemon thread started from __main__.
+    """
+    deb_mes("Precache: starting precache for all users")
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute('SELECT id FROM users')
+    user_rows = c.fetchall()
+    conn.close()
+    if not user_rows:
+        deb_mes("Precache: no users found, skipping")
+        return
+
+    user_ids = [r['id'] for r in user_rows]
+    deb_mes(f"Precache: found {len(user_ids)} users, starting ThreadPool with {PRECACHE_WORKERS} workers")
+
+    def task_for_user(uid):
+        try:
+            ensure_suggestion_row(uid)
+            # prepare user's current words for the smart prompt
+            cconn = get_db_connection()
+            cur = cconn.cursor()
+            cur.execute('SELECT word FROM words WHERE userID = ?', (uid,))
+            user_words = [r['word'] for r in cur.fetchall()]
+            cconn.close()
+            # Generate random suggestions and smart suggestions sequentially for this user
+            generate_and_append_for_user(uid, 'random', None)
+            generate_and_append_for_user(uid, 'smart', user_words)
+        except Exception as e:
+            deb_mes(f"Precache: exception for user {uid}: {e}")
+
+    # Use ThreadPoolExecutor to limit concurrent AI calls
+    with ThreadPoolExecutor(max_workers=PRECACHE_WORKERS) as executor:
+        futures = [executor.submit(task_for_user, uid) for uid in user_ids]
+        # Wait for all tasks to finish. This will block the background thread only.
+        for f in futures:
+            try:
+                f.result()
+            except Exception as e:
+                deb_mes(f"Precache worker exception: {e}")
+
+    deb_mes("Precache: completed precache for all users")
+
+# =========================
+#         Routes
+# =========================
 
 def validateLogin(destination):
-    """Helper used by many routes that return templates.
-    If user is not logged in, redirect to login. Otherwise render the requested template.
-    """
+    """Helper used by many routes that return templates."""
     if 'userID' not in session:
         return redirect('/login')
     return render_template(destination)
-
-#=======================
-#         Routes
-#=======================
 
 @app.route('/login')
 def routeToLogin():
@@ -220,12 +580,7 @@ def coffe():
 
 @app.route('/register', methods=['POST'])
 def register():
-    """Register a new user.
-    - Validates input presence
-    - Ensures username uniqueness
-    - Stores hashed password
-    Returns redirect to login on success.
-    """
+    """Register a new user."""
     username = request.form.get('username', '').strip()
     password = request.form.get('password', '').strip()
     if not username or not password:
@@ -245,9 +600,7 @@ def register():
 
 @app.route('/login', methods=['POST'])
 def login():
-    """Authenticate user and create a session.
-    Uses Werkzeug's password hash checking.
-    """
+    """Authenticate user and create a session."""
     username = request.form.get('username', '').strip()
     password = request.form.get('password', '').strip()
     if not username or not password:
@@ -261,11 +614,10 @@ def login():
 
     if user and check_password_hash(user['password'], password):
         session['userID'] = user['id']
-        # persist theme in session; legacy code checks user.keys() for theme
         session['theme'] = user['theme'] if 'theme' in user.keys() else 'themeDark'
+        ensure_suggestion_row(user['id'])
         return redirect('/home')
     else:
-
         return render_template('landing.html', login_error="Hibás felhasználónév vagy jelszó!")
 
 @app.route('/logout', methods=['GET'])
@@ -277,9 +629,7 @@ def logout():
 
 @app.route('/add_word', methods=['POST'])
 def add_word():
-    """Add a new word for the logged in user.
-    Accepts counts for statistics as optional form fields (used when importing).
-    """
+    """Add a new word for the logged in user."""
     if 'userID' not in session:
         return jsonify({"status": "error", "message": "User not logged in!"}), 400
     user_id = session['userID']
@@ -304,9 +654,7 @@ def add_word():
 
 @app.route('/get_random_word', methods=['GET'])
 def get_random_word():
-    """Return a random word record for the logged in user.
-    If the user has no words, returns an error JSON.
-    """
+    """Return a random word record for the logged in user (from user's own words)."""
     if 'userID' not in session:
         return jsonify({"status": "error", "message": "User not logged in!"}), 400
 
@@ -341,9 +689,7 @@ def get_word_count():
 
 @app.route('/update_score', methods=['POST'])
 def update_score():
-    """Increment the appropriate statistic column for a word.
-    Expects JSON with word_id and status in {'fail','pass','failWithHelp','passWithHelp'}.
-    """
+    """Increment the appropriate statistic column for a word."""
     if 'userID' not in session:
         return jsonify({"status": "error", "message": "User not logged in!"}), 400
 
@@ -376,15 +722,12 @@ def switch_translation():
     """Toggle translation direction for practice. Stored in session as boolean."""
     if 'userID' not in session:
         return jsonify({"status": "error", "message": "User not logged in!"}), 400
-    # Default True means english -> hungarian
     session['translation_direction'] = not session.get('translation_direction', True)
     return jsonify({"status": "success", "message": "Translation direction switched!"}), 200
 
 @app.route('/accept_word', methods=['POST'])
 def accept_word():
-    """Accept a suggested word and add it to the user's word list.
-    Expects JSON {word, translation}
-    """
+    """Accept a suggested word and add it to the user's word list."""
     if 'userID' not in session:
         return jsonify({"status": "error", "message": "User not logged in!"}), 400
     user_id = session['userID']
@@ -392,6 +735,12 @@ def accept_word():
     translation = request.json.get('translation')
     if not word or not translation:
         return jsonify({"status": "error", "message": "Missing word or translation!"}), 400
+
+    # Prevent inserting duplicates (case-insensitive)
+    existing = _get_user_words_set_lower(user_id)
+    if word.strip().lower() in existing:
+        return jsonify({"status": "error", "message": "Word already exists in your dictionary."}), 400
+
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('''
@@ -399,168 +748,130 @@ def accept_word():
         VALUES (?, ?, ?, 0, 0, 0, 0)
     ''', (user_id, word, translation))
     commit_and_update(conn)
+
+    # Trigger background generation for both buffers so the user keeps seeing fresh suggestions.
+    try:
+        threading.Thread(target=generate_and_append_for_user, args=(user_id, 'random', None), daemon=True).start()
+        conn2 = get_db_connection()
+        cur2 = conn2.cursor()
+        cur2.execute('SELECT word FROM words WHERE userID = ?', (user_id,))
+        user_words = [r['word'] for r in cur2.fetchall()]
+        conn2.close()
+        threading.Thread(target=generate_and_append_for_user, args=(user_id, 'smart', user_words), daemon=True).start()
+    except Exception as e:
+        deb_mes(f"Error starting background generation threads: {e}")
+
     return jsonify({"status": "success", "message": "Word accepted and added!"}), 200
 
 @app.route('/recommend_word', methods=['GET'])
 def recommend_word():
-    """Return a random dictionary entry for user to consider adding."""
-    if 'userID' not in session:
-        return jsonify({"status": "error", "message": "User not logged in!"}), 400
-    entry = get_random_dictionary_entry()
-    return jsonify({
-        "status": "success",
-        "word": entry["english"],
-        "translation": entry["hungarian"]
-    })
-
-@app.route('/get_choices', methods=['POST'])
-def get_choices():
-    """Provide multiple-choice alternatives for a given word id.
-    direction=True means english->hungarian so we pick other translations as distractors,
-    direction=False means hungarian->english.
-    The function excludes the correct word from distractor selection.
+    """
+    Return a suggestion from the per-user random buffer.
+    If buffer empty:
+      - If generation in progress: respond with 'busy' so client can wait.
+      - Otherwise, attempt synchronous generation (which will filter duplicates).
+      - No fallback words are provided.
     """
     if 'userID' not in session:
         return jsonify({"status": "error", "message": "User not logged in!"}), 400
     user_id = session['userID']
-    data = request.get_json()
-    word_id = data.get('word_id')
-    direction = data.get('direction')
-    if word_id is None or direction is None:
-        return jsonify({"status": "error", "message": "Missing parameters!"}), 400
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('SELECT word, translation FROM words WHERE id=? AND userID=?', (word_id, user_id))
-    row = cursor.fetchone()
-    if not row:
-        conn.close()
-        return jsonify({"status": "error", "message": "Word not found!"}), 404
-    # Choose correct field based on requested direction
-    correct = row['translation'] if direction else row['word']
-    if direction:
-        cursor.execute('SELECT translation FROM words WHERE userID=? AND id <> ?', (user_id, word_id))
-        all_choices = [r['translation'] for r in cursor.fetchall()]
-    else:
-        cursor.execute('SELECT word FROM words WHERE userID=? AND id <> ?', (user_id, word_id))
-        all_choices = [r['word'] for r in cursor.fetchall()]
-    conn.close()
-    # Shuffle and pick up to 3 distractors
-    random.shuffle(all_choices)
-    choices = all_choices[:3]
-    # Add correct option and shuffle again so correct isn't always last
-    choices.append(correct)
-    random.shuffle(choices)
-    return jsonify({
-        "status": "success",
-        "choices": choices,
-        "correct": correct
-    }), 200
+    ensure_suggestion_row(user_id)
 
-@app.route('/get_learning_words', methods=['GET'])
-def get_learning_words():
-    """Return a list of word IDs the user should practice next.
-    Logic:
-      - Compute confidence index for every word
-      - Negative confidence indices are prioritized (user struggles with them)
-      - Ensure we return up to 10 items: always include negative ones, then fill with lowest confidence words
-    """
-    if 'userID' not in session:
-        return jsonify({"status": "error", "message": "User not logged in!"}), 400
-    user_id = session['userID']
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM words WHERE userID = ?', (user_id,))
-    words = cursor.fetchall()
-    conn.close()
-    if not words:
-        return jsonify({"status": "error", "message": "No words found for the user!"}), 400
-    word_infos = []
-    for w in words:
-        ci = get_confidence_index(w)
-        word_infos.append({'word_id': w['id'], 'confidenceIndex': ci})
-    negative = [x for x in word_infos if x['confidenceIndex'] < 0]
-    # If not enough negative words, include additional low-confidence words until we have up to 10
-    if len(negative) < 5:
-        word_infos_sorted = sorted(word_infos, key=lambda x: x['confidenceIndex'])
-        added = {w['word_id'] for w in negative}
-        for w in word_infos_sorted:
-            if len(negative) >= 10:
-                break
-            if w['word_id'] not in added:
-                negative.append(w)
-                added.add(w['word_id'])
-    return jsonify({
-        "status": "success",
-        "word_ids": [x['word_id'] for x in negative]
-    })
+    # Try to pop existing buffer (will skip/remove already-known words)
+    item, used = pop_from_buffer(user_id, 'random')
+    if used and item:
+        # Start background replenishment (non-blocking)
+        try:
+            threading.Thread(target=generate_and_append_for_user, args=(user_id, 'random', None), daemon=True).start()
+        except Exception as e:
+            deb_mes(f"Error starting background generation thread after pop: {e}")
+        return jsonify({"status": "success", "word": item['word'], "translation": item['translation']}), 200
 
-@app.route('/get_word_by_id', methods=['POST'])
-def get_word_by_id():
-    """Return full word record (word + translation) by ID for the current user."""
-    if 'userID' not in session:
-        return jsonify({"status": "error", "message": "User not logged in!"}), 400
-    user_id = session['userID']
-    word_id = request.json.get('word_id')
-    if not word_id:
-        return jsonify({"status": "error", "message": "Missing word_id!"}), 400
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM words WHERE id = ? AND userID = ?', (word_id, user_id))
-    word = cursor.fetchone()
-    conn.close()
-    if not word:
-        return jsonify({"status": "error", "message": "Word not found!"}), 404
-    return jsonify({
-        "status": "success",
-        "word_id": word['id'],
-        "word": word['word'],
-        "translation": word['translation']
-    })
+    # Buffer empty
+    if is_generating(user_id, 'random'):
+        return jsonify({"status": "busy", "message": "AI is generating suggestions — please wait."}), 202
+
+    # Start synchronous generation
+    mark_generation(user_id, 'random', True)
+    try:
+        new_items = ai_generate_random_pairs(user_id)
+        if new_items is None:
+            return jsonify({"status": "error", "message": "AI is not available or returned invalid output."}), 503
+        # new_items may be fewer than 4 after filtering; if empty -> treat as no suggestions
+        if not new_items:
+            return jsonify({"status": "error", "message": "AI returned only words already in your dictionary."}), 503
+        write_buffer(user_id, 'random', new_items)
+        item, _ = pop_from_buffer(user_id, 'random')
+        if not item:
+            return jsonify({"status": "error", "message": "Failed to prepare suggestions."}), 500
+        try:
+            threading.Thread(target=generate_and_append_for_user, args=(user_id, 'random', None), daemon=True).start()
+        except Exception as e:
+            deb_mes(f"Error starting background generation thread after sync fill: {e}")
+        return jsonify({"status": "success", "word": item['word'], "translation": item['translation']}), 200
+    finally:
+        mark_generation(user_id, 'random', False)
 
 @app.route('/recommend_smart_word', methods=['GET'])
 def recommend_smart_word():
-    """Try to recommend a 'smart' word not already in the user's list.
-    Strategy:
-      - Compute average length of user's words (or use 5 as default)
-      - Filter dictionary entries to those not already learned by the user
-      - Sample up to 10 candidates and pick the one whose length is closest to the average
-    This is a heuristic to suggest words of similar complexity to the user's current vocabulary.
+    """
+    Return a suggestion from the per-user smart buffer.
+    If user has >40 words, only a random sample of 40 is included in the prompt.
+    Duplicates in buffer/AI output are filtered out.
     """
     if 'userID' not in session:
         return jsonify({"status": "error", "message": "User not logged in!"}), 400
     user_id = session['userID']
+    ensure_suggestion_row(user_id)
+
+    # Collect user's current words for prompt
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('SELECT word FROM words WHERE userID = ?', (user_id,))
-    user_words = set(row['word'].strip().lower() for row in cursor.fetchall())
+    user_words = [r['word'] for r in cursor.fetchall()]
     conn.close()
-    avg_len = 5 if not user_words else sum(len(w) for w in user_words) / len(user_words)
-    entries = load_dictionary()
-    all_entries = [entry for entry in entries if entry.get("english", "").strip().lower() not in user_words]
-    if not all_entries:
-        return jsonify({"status": "error", "message": "No more new words to recommend!"}), 400
-    sample_entries = random.sample(all_entries, min(10, len(all_entries)))
-    def length_metric(entry):
-        return abs(len(entry.get("english", "")) - avg_len)
-    best_entry = min(sample_entries, key=length_metric)
-    return jsonify({
-        "status": "success",
-        "word": best_entry.get("english", ""),
-        "translation": best_entry.get("hungarian", "")
-    })
 
+    # Try to pop existing buffered suggestion (skips any that became duplicates)
+    item, used = pop_from_buffer(user_id, 'smart')
+    if used and item:
+        try:
+            threading.Thread(target=generate_and_append_for_user, args=(user_id, 'smart', user_words), daemon=True).start()
+        except Exception as e:
+            deb_mes(f"Error starting background generation thread after pop (smart): {e}")
+        return jsonify({"status": "success", "word": item['word'], "translation": item['translation']}), 200
+
+    if is_generating(user_id, 'smart'):
+        return jsonify({"status": "busy", "message": "AI is generating suggestions — please wait."}), 202
+
+    # Start synchronous generation
+    mark_generation(user_id, 'smart', True)
+    try:
+        new_items = ai_generate_smart_pairs(user_id, user_words)
+        if new_items is None:
+            return jsonify({"status": "error", "message": "AI is not available or returned invalid output."}), 503
+        if not new_items:
+            return jsonify({"status": "error", "message": "AI returned only words already in your dictionary."}), 503
+        write_buffer(user_id, 'smart', new_items)
+        item, _ = pop_from_buffer(user_id, 'smart')
+        if not item:
+            return jsonify({"status": "error", "message": "Failed to prepare suggestions."}), 500
+        try:
+            threading.Thread(target=generate_and_append_for_user, args=(user_id, 'smart', user_words), daemon=True).start()
+        except Exception as e:
+            deb_mes(f"Error starting background generation thread after sync fill (smart): {e}")
+        return jsonify({"status": "success", "word": item['word'], "translation": item['translation']}), 200
+    finally:
+        mark_generation(user_id, 'smart', False)
+
+# The remainder of the routes are unchanged and operate on user's stored words/settings.
 @app.route('/edit')
 def routeToEdit():
-    """Words edit page (authenticated)."""
     if 'userID' not in session:
         return redirect('/login')
     return render_template('edit.html')
 
 @app.route('/get_user_words', methods=['GET'])
 def get_user_words():
-    """Return all user's words as a list with id, word and translation.
-    Used by the edit UI to populate the table.
-    """
     if 'userID' not in session:
         return jsonify({"status": "error", "message": "User not logged in!"}), 400
     user_id = session['userID']
@@ -576,7 +887,6 @@ def get_user_words():
 
 @app.route('/delete_word', methods=['POST'])
 def delete_word():
-    """Delete a word owned by the current user."""
     if 'userID' not in session:
         return jsonify({"status": "error", "message": "User not logged in!"}), 400
     user_id = session['userID']
@@ -591,7 +901,6 @@ def delete_word():
 
 @app.route('/update_word', methods=['POST'])
 def update_word():
-    """Update a word and its translation. Checks user ownership."""
     if 'userID' not in session:
         return jsonify({"status": "error", "message": "User not logged in!"}), 400
     user_id = session['userID']
@@ -610,16 +919,12 @@ def update_word():
 
 @app.route('/statistics')
 def routeToStatistics():
-    """Statistics dashboard (authenticated)."""
     if 'userID' not in session:
         return redirect('/login')
     return render_template('statistics.html')
 
 @app.route('/get_word_statistics', methods=['GET'])
 def get_word_statistics():
-    """Return full statistics for all words owned by current user.
-    Also computes confidence index on the server side for consistency with client.
-    """
     if 'userID' not in session:
         return jsonify({"status": "error", "message": "User not logged in!"}), 400
     user_id = session['userID']
@@ -651,14 +956,12 @@ def get_word_statistics():
 
 @app.route('/settings')
 def routeToSettings():
-    """User settings page (authenticated)."""
     if 'userID' not in session:
         return redirect('/login')
     return render_template('settings.html')
 
 @app.route('/get_user_info', methods=['GET'])
 def get_user_info():
-    """Return basic user info (id, username) for the settings UI."""
     if 'userID' not in session:
         return jsonify({"status": "error", "message": "User not logged in!"}), 400
     user_id = session['userID']
@@ -673,10 +976,6 @@ def get_user_info():
 
 @app.route('/update_user', methods=['POST'])
 def update_user():
-    """Update username and/or password for the current user.
-    - Checks for username uniqueness when changing username.
-    - Hashes password before storing.
-    """
     if 'userID' not in session:
         return jsonify({"status": "error", "message": "User not logged in!"}), 400
     user_id = session['userID']
@@ -712,15 +1011,11 @@ def update_user():
 
 @app.context_processor
 def inject_theme():
-    """Make the current theme available in templates as `theme`."""
     theme = session.get('theme', 'themeDark')
     return dict(theme=theme)
 
 @app.route('/set_theme', methods=['POST'])
 def set_theme():
-    """Set theme preference in session and persist in DB if user is logged in.
-    Expects JSON {theme: "themeName"}.
-    """
     data = request.get_json() or {}
     theme = data.get('theme')
     if not theme:
@@ -739,7 +1034,16 @@ def set_theme():
 #           Run
 #==========================
 if __name__ == '__main__':
-    # On startup, verify DB integrity and initialize tables if needed.
     verify_db_hmac()
     init_db()
-    app.run(host='0.0.0.0')
+
+    # Start background precache for all users (non-blocking)
+    try:
+        t = threading.Thread(target=precache_suggestions_for_all_users, daemon=True)
+        t.start()
+        deb_mes("Started background precache thread")
+    except Exception as e:
+        deb_mes(f"Failed to start precache thread: {e}")
+
+    debug_mode = os.environ.get("FLASK_DEBUG", "0") == "1"
+    app.run(host='0.0.0.0', debug=debug_mode)
