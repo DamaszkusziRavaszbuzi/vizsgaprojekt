@@ -1,32 +1,50 @@
 :root {
-  --Pbackground: rgb(46, 46, 46); /*Primary background*/
-  --Sbackground: black; /*Secondary background*/
-  --Cbackground: rgb(20, 20, 20); /*Card background*/
-  --outline: orange;
-  --text: rgb(187, 121, 0);
-  --HighlightBackground: rgb(121, 78, 0);
-  --HighlightText: rgb(255, 170, 0);
-  --error: rgb(255, 0, 0);
-  --white: rgb(255,255,255);
+  --Pbackground: #1a1a1a;
+  --Sbackground: #2d2d2d;
+  --Cbackground: #242424;
+  --outline: #ff9500;
+  --text: #e8b87d;
+  --HighlightBackground: #d97700;
+  --HighlightText: #ffb84d;
+  --error: #ff4444;
+  --white: #ffffff;
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.15);
+  --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.25);
+  --toggle-bg: rgba(0, 0, 0, 0.6);
+  --toggle-fg: #ffb84d;
+}
+
+body {
+  background-color: var(--Pbackground);
+  color: var(--text);
 }
 
 .highlightOnHoverButton {
   background-color: var(--Sbackground);
-  box-shadow: 0 6px var(--text); 
+  box-shadow: 0 6px var(--text);
   color: var(--text);
+  border: 2px solid var(--outline);
 }
 
 .highlightOnHoverButton:hover {
   color: var(--HighlightText);
   box-shadow: 0 10px var(--HighlightText);
+  background-color: rgba(255, 149, 0, 0.1);
 }
 
 .highlightOnHoverButton:active {
   box-shadow: 0 2px var(--text);
 }
 
+.highlightOnHoverButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .sidenav {
   background-color: var(--Sbackground);
+  border-right: 1px solid var(--outline);
 }
 
 .sidenav a {
@@ -35,47 +53,70 @@
 
 .sidenav a:hover {
   color: var(--HighlightText);
+  background-color: rgba(255, 149, 0, 0.08);
 }
 
-body {
-  background-color: var(--Pbackground);
-}
 .inputField {
   background: var(--Sbackground);
   border-color: var(--outline);
   color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+.inputField:focus {
+  border-color: var(--HighlightText);
+  box-shadow:
+    0 0 0 3px rgba(255, 149, 0, 0.1),
+    var(--shadow-md);
+}
+
+.inputField::placeholder {
+  color: rgba(232, 184, 125, 0.6);
 }
 
 .buttonList button {
   background-color: var(--Sbackground);
   border-color: var(--outline);
   color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+.buttonList button:hover {
+  background-color: rgba(255, 149, 0, 0.08);
+  border-color: var(--HighlightText);
+  color: var(--HighlightText);
 }
 
 .wordDisplay {
   border-color: var(--outline);
   color: var(--text);
   background-color: var(--Sbackground);
+  box-shadow: var(--shadow-sm);
 }
 
-h1 {
-  color: var(--text);
+h1,
+h2,
+h3 {
+  color: var(--HighlightText);
 }
 
 #addCardBtn {
   background-color: var(--Sbackground);
   box-shadow: 0 6px var(--text);
   color: var(--text);
+  border: 2px solid var(--outline);
 }
 
 #addCardBtn:hover {
   color: var(--HighlightText);
   box-shadow: 0 10px var(--HighlightText);
+  background-color: rgba(255, 149, 0, 0.1);
 }
 
 #addCardBtn:active {
   box-shadow: 0 2px var(--text);
 }
+
 .card-front,
 .card-back {
   border: 3px solid var(--outline);
@@ -84,16 +125,23 @@ h1 {
 .card-front {
   background: var(--Sbackground);
   color: var(--text);
+  box-shadow: var(--shadow-md);
 }
+
 .card-back {
   background: var(--Cbackground);
   color: var(--HighlightText);
+  box-shadow: var(--shadow-md);
 }
+
 .placeholder-text {
   color: var(--text);
 }
+
 .form-container {
   background: var(--Cbackground);
+  border: 1px solid var(--outline);
+  box-shadow: var(--shadow-md);
 }
 
 .form-container input {
@@ -101,15 +149,30 @@ h1 {
   border: 2px solid var(--outline);
   color: var(--text);
 }
+
 .form-container input::placeholder {
-  color: var(--text);
+  color: rgba(232, 184, 125, 0.6);
+}
+
+.form-container input:focus {
+  border-color: var(--HighlightText);
+  box-shadow: 0 0 0 3px rgba(255, 149, 0, 0.1);
 }
 
 .title {
   color: var(--HighlightText);
+  font-weight: 700;
 }
 
 .error-message {
   color: var(--white);
   background: var(--error);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-weight: 600;
+  box-shadow: var(--shadow-md);
+}
+
+.side-bg {
+  background: var(--Sbackground);
 }

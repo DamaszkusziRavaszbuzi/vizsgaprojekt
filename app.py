@@ -14,6 +14,7 @@ import re
 import random
 import ollama 
 from concurrent.futures import ThreadPoolExecutor
+import argparse
 
 #==========================
 #          Init
@@ -29,7 +30,7 @@ VERBOSE_LOGGING = True
 HMAC_FILE = DATABASE + ".hmac"
 
 # Ollama settings
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "gpt-oss:20b")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "gemma3:4b")
 OLLAMA_TIMEOUT = int(os.environ.get('OLLAMA_TIMEOUT', '180'))  # seconds for timeouts/polling
 
 # Maximum concurrent workers for precaching at startup
@@ -135,7 +136,7 @@ def init_db():
     commit_and_update(conn)
 
 # =========================
-#  Ollama / AI integration (robust)
+#  Ollama / AI integration
 # =========================
 
 def _extract_response_from_obj(res):
@@ -338,7 +339,7 @@ def ai_generate_smart_pairs(user_id, user_words):
     return filtered
 
 # =========================
-#  Suggestion buffer and concurrency control (with dedupe-on-pop)
+#  Suggestion buffer and concurrency control
 # =========================
 
 generation_lock = threading.Lock()
@@ -570,12 +571,11 @@ def routeToCards():
 
 @app.route('/forgotPassword')
 def xd():
-    """Placeholder forgot password page."""
     return render_template('xd.html')
 
 @app.route('/makeCoffee')
 def coffe():
-    """Easter-egg returning HTTP teapot code in template."""
+    """Easter-egg returning HTCPCP teapot code in template."""
     return render_template('coffee.html', code=418)
 
 @app.route('/register', methods=['POST'])
@@ -1034,16 +1034,23 @@ def set_theme():
 #           Run
 #==========================
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Run the Flask app.")
+    parser.add_argument('--precache', action='store_true', help='Start background precache of AI suggestions on startup')
+    args = parser.parse_args()
+
     verify_db_hmac()
     init_db()
 
-    # Start background precache for all users (non-blocking)
-    try:
-        t = threading.Thread(target=precache_suggestions_for_all_users, daemon=True)
-        t.start()
-        deb_mes("Started background precache thread")
-    except Exception as e:
-        deb_mes(f"Failed to start precache thread: {e}")
+    # Start background precache for all users only when --precache is provided
+    if args.precache:
+        try:
+            t = threading.Thread(target=precache_suggestions_for_all_users, daemon=True)
+            t.start()
+            deb_mes("Started background precache thread")
+        except Exception as e:
+            deb_mes(f"Failed to start precache thread: {e}")
+    else:
+        deb_mes("Precache skipped (run with --precache to enable)")
 
     debug_mode = os.environ.get("FLASK_DEBUG", "0") == "1"
     app.run(host='0.0.0.0', debug=debug_mode)

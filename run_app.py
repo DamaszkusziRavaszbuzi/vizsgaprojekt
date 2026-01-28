@@ -1,13 +1,14 @@
-#!/usr/bin/env python3
+
 """
 run_app.py — bootstrapper that ensures a virtual environment exists,
-installs required Python packages (including 'ollama'), and runs app.py
+installs required Python packages, and runs app.py
 inside that environment.
 
 Usage:
   - python run_app.py         # creates .venv (if needed), installs deps, runs app.py
   - python run_app.py --install-only   # create venv and install deps, then exit
   - python run_app.py --venv-dir <dir> # use custom venv directory
+  - python run_app.py --precache       # pass --precache to app.py (start precache there)
 """
 
 import os
@@ -56,6 +57,7 @@ def main():
     parser.add_argument("--venv-dir", default=DEFAULT_VENV_DIR, help="Virtualenv directory")
     parser.add_argument("--install-only", action="store_true", help="Only create venv and install deps, do not run the app")
     parser.add_argument("--recreate", action="store_true", help="Remove existing venv and recreate it")
+    parser.add_argument("--precache", action="store_true", help="Pass --precache to app.py so the app will precache suggestions on startup")
     args = parser.parse_args()
 
     venv_dir = args.venv_dir
@@ -87,8 +89,12 @@ def main():
     if not os.path.exists(app_path):
         raise SystemExit(f"app.py not found at expected location: {app_path}")
 
+    cmd = [venv_python, app_path]
+    if args.precache:
+        cmd.append("--precache")
+
     print("Starting app.py with venv python ...")
-    os.execv(venv_python, [venv_python, app_path])
+    os.execv(venv_python, cmd)
 
 if __name__ == "__main__":
     main()

@@ -39,17 +39,18 @@ head_extra %}
       <a class="menu-button" href="{{url_for('routeToNew')}}" role="listitem"
         >Új szó hozzáadása</a
       >
+      <!-- Explicitly indicate AI-backed suggestions so it's clear the source is the AI -->
       <a
         class="menu-button"
         href="{{url_for('routeToNewRandom')}}"
         role="listitem"
-        >Új random szó</a
+        >Új random szó (AI)</a
       >
       <a
         class="menu-button"
         href="{{url_for('routeToNewRandom')}}?mode=suggested"
         role="listitem"
-        >Új ajánlott szó</a
+        >Új ajánlott szó (AI)</a
       >
     </div>
   </div>
