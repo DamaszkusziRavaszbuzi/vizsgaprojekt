@@ -10,9 +10,9 @@ Projektünk egy modern, interaktív szókincsfejlesztő webes alkalmazás oktat�
 Célja a hagyományos papír alapú szókártyák kiváltása egy környezetbarátabb, digitális megoldással, amely intuitív funkcióival hatékonyabbá teszi anyelvtanulást.
 
 <h2>Telepítés, futtatás:</h2>
-$ git clone https://github.com/DamaszkusziRavaszbuzi/vizsgaprojekt.git             
-$ cd vizsgaprojekt           
-$ python3 run_app.py          
+$ git clone https://github.com/DamaszkusziRavaszbuzi/vizsgaprojekt.git<br/>             
+$ cd vizsgaprojekt<br/>           
+$ python3 run_app.py<br/>          
 
 
 A repó klónozása után a run_app.py script-tel futtatható a program. A script létrehozza a virtuális környezetet (venv), illetve telepíti a szükséges modulokat, függőségeket, majd elindítja a backendet.
